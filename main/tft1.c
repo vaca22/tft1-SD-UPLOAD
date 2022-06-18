@@ -393,6 +393,8 @@ void fillRect(int x,int y, int w,int h,uint16_t color){
     }
 }
 
+
+
 void dispLine(int x){
     if(x>=0&&x<4){
         send_lines(*mySpi, x*PARALLEL_LINES, scr);
@@ -405,7 +407,12 @@ void dispAll(){
         dispLine(k);
     }
 }
-
+void dispProgress(int k){
+    clearScreen(0xffff);
+    drawRect(20,10,200,20,0x1F00);
+    fillRect(20,10,k*2,20,0x1F00);
+    dispLine(3);
+}
 void app_main(void) {
     esp_err_t ret;
     spi_device_handle_t spi;
@@ -445,10 +452,12 @@ void app_main(void) {
     clearScreen(0xffff);
     drawString(k5,10,5,0,0xffff);
     dispLine(2);
-    clearScreen(0xffff);
-    drawRect(20,10,200,20,0x1F00);
-    dispLine(3);
 
+
+    for(int k=0;k<=100;k++){
+        dispProgress(k);
+        vTaskDelay(10);
+    }
 
 
 
