@@ -321,7 +321,7 @@ const uint8_t gaga[]={
 
 
 uint8_t k1[]={5,0,1,2,3,4};
-uint8_t k2[]={11,5,6,7,3,4,9,0,10,11,17,18};
+uint8_t k2[]={12,5,6,7,8,3,4,9,0,10,11,17,18};
 uint8_t k3[]={10,3,4,12,13,9,0,14,15,16,1};
 uint8_t k4[]={11,17,18,10,11,19,20,9,21,22,3,23};
 
@@ -346,7 +346,6 @@ void drawChar(int x1, int y1,uint8_t *z1,uint16_t frontColor, uint16_t backColor
 
 void drawString(uint8_t* ss,int x1,int y1,uint16_t frontColor, uint16_t backColor){
     int len=ss[0]+1;
-    ESP_LOGE("fuck","%d", len);
     for(int k=1;k<len;k++){
         drawChar(x1+k*16,y1,&gaga[ss[k]*32],frontColor,backColor);
     }
@@ -360,9 +359,15 @@ void clearScreen(uint16_t color){
 }
 
 void dispLine(int x){
-    if(x>0&&x<4){
+    if(x>=0&&x<4){
         send_lines(*mySpi, x*PARALLEL_LINES, scr);
         send_line_finish(*mySpi);
+    }
+}
+
+void dispAll(){
+    for(int k=0;k<4;k++){
+        dispLine(k);
     }
 }
 
@@ -393,26 +398,23 @@ void app_main(void) {
     mySpi = &spi;
     lcd_init(spi);
 
-    LCD_Fill(0, 0, 240, 240, 0xFFFF);
+    clearScreen(0xffff);
+
+    dispAll();
+
+    drawString(k1,10,5,0,0xffff);
+    dispLine(0);
+    clearScreen(0xffff);
+    drawString(k2,10,5,0,0xffff);
+    dispLine(1);
+    clearScreen(0xffff);
+    drawString(k3,10,5,0,0xffff);
+    dispLine(2);
+    clearScreen(0xffff);
+    drawString(k4,10,5,0,0xffff);
+    dispLine(3);
 
 
 
-
-    drawString(k1,10,5);
-
-
-
-
-
-    send_lines(*mySpi, 60, scr);
-    send_line_finish(*mySpi);
-
-
-    send_lines(*mySpi, 120, scr);
-    send_line_finish(*mySpi);
-
-
-    send_lines(*mySpi, 180, scr);
-    send_line_finish(*mySpi);
 
 }
