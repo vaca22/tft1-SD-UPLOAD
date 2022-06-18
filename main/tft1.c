@@ -19,6 +19,14 @@
 #include "driver/spi_master.h"
 #include "driver/gpio.h"
 static const char *TAG = "HTTP_CLIENT";
+int haveSD=false;
+int sdFailStatus=true;
+static TaskHandle_t detect_task_h;
+
+
+
+
+
 #define LCD_HOST    SPI2_HOST
 
 #define PIN_NUM_MISO -1
@@ -33,9 +41,7 @@ static const char *TAG = "HTTP_CLIENT";
 
 #define PARALLEL_LINES 60
 spi_device_handle_t *mySpi;
-/*
- The LCD needs a bunch of command/argument values to be initialized. They are stored in this struct.
-*/
+
 typedef struct {
     uint8_t cmd;
     uint8_t data[16];
@@ -480,6 +486,16 @@ int sdcard_mount(void)
 
 
 
+static void detect1_task(void *pvParameters) {
+    while (true){
+        vTaskDelay(300);
+        if(sdFailStatus){
+            sdFailStatus=sdcard_mount();
+        }
+    }
+
+}
+
 
 void app_main(void) {
     esp_err_t ret;
@@ -522,13 +538,14 @@ void app_main(void) {
     dispLine(2);
 
 
-    for(int k=0;k<=100;k++){
-        dispProgress(k);
-        vTaskDelay(10);
-    }
+//    for(int k=0;k<=100;k++){
+//        dispProgress(k);
+//        vTaskDelay(10);
+//    }
 
-    sdcard_mount();
+//    sdcard_mount();
 
+    xTaskCreatePinnedToCore(detect1_task, "detect", 4096, NULL, configMAX_PRIORITIES, &detect_task_h, 1);
 
 
 }
