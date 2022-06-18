@@ -223,6 +223,8 @@ void LCD_Fill(u16 xsta, u16 ysta, u16 xend, u16 yend, u16 color) {
 
 
 uint16_t scr[14400];
+uint8_t gaga[]={0x00,0x40,0x40,0x40,0x27,0xFC,0x20,0x40,0x03,0xF8,0x00,0x40,0xE7,0xFE,0x20,0x00,
+                0x23,0xF8,0x22,0x08,0x23,0xF8,0x22,0x08,0x2B,0xF8,0x32,0x08,0x22,0x28,0x02,0x10};
 
 void app_main(void) {
     esp_err_t ret;
@@ -258,8 +260,27 @@ void app_main(void) {
         scr[k] = 0x1f00;
     }
 
+    for(int k=0;k<16;k++){
+        for(int j=0;j<2;j++){
+            int x=2*k+j;
+            int y=gaga[x];
+            for(int i=0;i<8;i++){
+                if(y&(1<<(7-i))){
+                    scr[k*240+i+j*8]=0xffff;
+                }else{
+                    scr[k*240+i+j*8]=0x1f00;
+                }
+            }
+        }
+    }
+
     send_lines(*mySpi, 0, scr);
     send_line_finish(*mySpi);
+    for (int k = 0; k < 14400; k++) {
+        scr[k] = 0x1f00;
+    }
+
+
     send_lines(*mySpi, 60, scr);
     send_line_finish(*mySpi);
     send_lines(*mySpi, 120, scr);
