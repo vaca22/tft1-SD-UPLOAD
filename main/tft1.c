@@ -10,12 +10,15 @@
 #include <stdlib.h>
 #include <string.h>
 #include <esp_log.h>
+#include <esp_vfs_fat.h>
+#include <driver/sdmmc_host.h>
+#include <sdmmc_cmd.h>
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 #include "esp_system.h"
 #include "driver/spi_master.h"
 #include "driver/gpio.h"
-
+static const char *TAG = "HTTP_CLIENT";
 #define LCD_HOST    SPI2_HOST
 
 #define PIN_NUM_MISO -1
@@ -413,6 +416,71 @@ void dispProgress(int k){
     fillRect(20,10,k*2,20,0x1F00);
     dispLine(3);
 }
+
+
+
+
+
+#define MOUNT_POINT "/sdcard"
+
+int sdcard_mount(void)
+{
+    esp_err_t ret;
+    esp_vfs_fat_sdmmc_mount_config_t mount_config = {
+            .format_if_mount_failed = false,
+            .max_files = 5,
+            .allocation_unit_size = 16 * 1024
+    };
+    sdmmc_card_t *card;
+    const char mount_point[] = MOUNT_POINT;
+    ESP_LOGI(TAG, "Initializing SD card");
+
+
+    ESP_LOGI(TAG, "Using SDMMC peripheral");
+    sdmmc_host_t host = SDMMC_HOST_DEFAULT();
+
+    sdmmc_slot_config_t slot_config = SDMMC_SLOT_CONFIG_DEFAULT();
+
+    slot_config.width = 1;
+
+    slot_config.clk = GPIO_NUM_3;
+    slot_config.cmd = GPIO_NUM_4;
+    slot_config.d0 = GPIO_NUM_14;
+    slot_config.d1 = GPIO_NUM_8;
+    slot_config.d2 = GPIO_NUM_12;
+    slot_config.d3 = GPIO_NUM_8;
+
+    slot_config.flags |= SDMMC_SLOT_FLAG_INTERNAL_PULLUP;
+
+    ESP_LOGI(TAG, "Mounting filesystem");
+    ret = esp_vfs_fat_sdmmc_mount(mount_point, &host, &slot_config, &mount_config, &card);
+
+    if (ret != ESP_OK) {
+        if (ret == ESP_FAIL) {
+            ESP_LOGE(TAG, "Failed to mount filesystem. "
+                          "If you want the card to be formatted, set the EXAMPLE_FORMAT_IF_MOUNT_FAILED menuconfig option.");
+        } else {
+            ESP_LOGE(TAG, "Failed to initialize the card (%s). "
+                          "Make sure SD card lines have pull-up resistors in place.", esp_err_to_name(ret));
+        }
+        return 1;
+    }
+    ESP_LOGI(TAG, "Filesystem mounted");
+
+
+    sdmmc_card_print_info(stdout, card);
+    return 0;
+
+
+}
+
+
+
+
+
+
+
+
 void app_main(void) {
     esp_err_t ret;
     spi_device_handle_t spi;
@@ -458,6 +526,8 @@ void app_main(void) {
         dispProgress(k);
         vTaskDelay(10);
     }
+
+    sdcard_mount();
 
 
 
