@@ -488,10 +488,10 @@ int sdcard_mount(void)
 
 static void detect1_task(void *pvParameters) {
     while (true){
-        vTaskDelay(300);
         if(sdFailStatus){
             sdFailStatus=sdcard_mount();
         }
+        vTaskDelay(300);
     }
 
 }
