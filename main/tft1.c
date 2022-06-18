@@ -374,6 +374,25 @@ void clearScreen(uint16_t color){
     }
 }
 
+void drawRect(int x,int y, int w,int h,uint16_t color){
+    for(int k=0;k<w;k++){
+        scr[x+k+y*LCD_W]=color;
+        scr[x+k+(y+h)*LCD_W]=color;
+    }
+    for(int k=0;k<h;k++){
+        scr[x+(y+k)*LCD_W]=color;
+        scr[x+w+(y+k)*LCD_W]=color;
+    }
+}
+
+void fillRect(int x,int y, int w,int h,uint16_t color){
+    for(int j=0;j<w;j++){
+        for(int k=0;k<h;k++){
+            scr[x+j+(y+k)*LCD_W]=color;
+        }
+    }
+}
+
 void dispLine(int x){
     if(x>=0&&x<4){
         send_lines(*mySpi, x*PARALLEL_LINES, scr);
@@ -427,7 +446,7 @@ void app_main(void) {
     drawString(k5,10,5,0,0xffff);
     dispLine(2);
     clearScreen(0xffff);
-    drawString(k6,10,5,0,0xffff);
+    drawRect(20,10,200,20,0x1F00);
     dispLine(3);
 
 
