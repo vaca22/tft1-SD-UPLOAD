@@ -18,6 +18,8 @@
 #include "esp_system.h"
 #include "driver/spi_master.h"
 #include "driver/gpio.h"
+#include "myble.h"
+char *ble_name = "lghGood";
 static const char *TAG = "HTTP_CLIENT";
 int haveSD=false;
 int sdFailStatus=true;
@@ -462,13 +464,7 @@ int sdcard_mount(void)
     ret = esp_vfs_fat_sdmmc_mount(mount_point, &host, &slot_config, &mount_config, &card);
 
     if (ret != ESP_OK) {
-        if (ret == ESP_FAIL) {
-            ESP_LOGE(TAG, "Failed to mount filesystem. "
-                          "If you want the card to be formatted, set the EXAMPLE_FORMAT_IF_MOUNT_FAILED menuconfig option.");
-        } else {
-            ESP_LOGE(TAG, "Failed to initialize the card (%s). "
-                          "Make sure SD card lines have pull-up resistors in place.", esp_err_to_name(ret));
-        }
+
         return 1;
     }
     ESP_LOGI(TAG, "Filesystem mounted");
@@ -481,6 +477,9 @@ int sdcard_mount(void)
 }
 
 
+void ble_uart(uart_port_t uart_num, const void *src, size_t size){
+   ESP_LOGE("good","%d",size);
+}
 
 
 
@@ -491,7 +490,7 @@ static void detect1_task(void *pvParameters) {
         if(sdFailStatus){
             sdFailStatus=sdcard_mount();
         }
-        vTaskDelay(300);
+        vTaskDelay(500);
     }
 
 }
@@ -547,5 +546,13 @@ void app_main(void) {
 
     xTaskCreatePinnedToCore(detect1_task, "detect", 4096, NULL, configMAX_PRIORITIES, &detect_task_h, 1);
 
+
+    send_uart_callback *ble_uart_callback;
+    ble_uart_callback=(send_uart_callback *) malloc(sizeof(send_uart_callback));
+    ble_uart_callback->func_name=ble_uart;
+    register_uart(ble_uart_callback);
+    init_ble();
+
+    ESP_LOGE(TAG, "Good Good Good");
 
 }
