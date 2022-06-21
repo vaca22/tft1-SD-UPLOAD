@@ -9,6 +9,7 @@
 #include <freertos/queue.h>
 #include "myScreen.h"
 #include "font.h"
+#include "decode_image.h"
 
 #define LCD_HOST    SPI2_HOST
 
@@ -279,6 +280,30 @@ void dispProgress(int k) {
     dispLine(3);
 }
 
+
+
+uint16_t **pixels;
+
+void dispImg(int index){
+    switch (index) {
+        case 1:    decode_image(&pixels,s1_start);break;
+        case 2:    decode_image(&pixels,s2_start);break;
+        case 3:    decode_image(&pixels,s3_start);break;
+        case 4:    decode_image(&pixels,s4_start);break;
+        case 5:    decode_image(&pixels,s5_start);break;
+        default:break;
+    }
+
+    for(int k=0;k<48;k++){
+        for(int j=0;j<48;j++){
+            scr[k*240+j]=pixels[k][j];
+        }
+    }
+    dispLine(0);
+}
+
+
+
 static TaskHandle_t disp_task_h;
 xQueueHandle disp_evt_queue = NULL;
 
@@ -312,6 +337,16 @@ static void disp_task(void *pvParameters) {
 
     clearScreen(0xffff);
     dispAll();
+    int n=1;
+    while (1){
+        dispImg(n);
+        n++;
+        if(n>5){
+            n=1;
+        }
+        vTaskDelay(20);
+    }
+
     uint32_t io_num;
     while (1) {
         xQueueReceive(disp_evt_queue, &io_num, portMAX_DELAY);
