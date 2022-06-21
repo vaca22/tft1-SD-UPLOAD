@@ -81,6 +81,12 @@ esp_err_t decode_image(uint16_t ***pixels,uint8_t *jpeg)
     int r;
     esp_rom_tjpgd_dec_t decoder;
     JpegDev jd;
+    if(*pixels!=NULL){
+        for (int i = 0; i < IMAGE_H; i++) {
+            free((*pixels)[i]);
+        }
+        free(*pixels);
+    }
     *pixels = NULL;
     esp_err_t ret = ESP_OK;
 
