@@ -10,7 +10,7 @@ extern "C" {
 #include "driver/uart.h"
 #include "driver/gpio.h"
 typedef struct {
-    void (*func_name)(uart_port_t uart_num, const void *src, size_t size);
+    void (*func_name)(const void *src, size_t size);
 }send_uart_callback;
 void register_uart(send_uart_callback * x);
 struct ble_hs_cfg;

@@ -16,6 +16,7 @@
 #include <nvs_flash.h>
 #include <nimble/nimble_port_freertos.h>
 #include <nimble/nimble_port.h>
+#include <host/ble_gap.h>
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 #include "esp_system.h"
@@ -25,6 +26,7 @@
 #include "font.h"
 #include "myScreen.h"
 #include "esp_nimble_hci.h"
+
 char *ble_name = "lghGood";
 static const char *TAG = "HTTP_CLIENT";
 int haveSD=false;
@@ -102,10 +104,12 @@ int sdcard_mount(void)
 }
 
 
-void ble_uart(uart_port_t uart_num, const void *src, size_t size){
+void ble_uart( const void *src, size_t size){
    ESP_LOGE("good","%d",size);
-    nimble_port_deinit();
+
+
     nimble_port_freertos_deinit();
+    nimble_port_deinit();
 }
 
 uint32_t ble_num;
