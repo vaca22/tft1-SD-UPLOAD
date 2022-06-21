@@ -67,7 +67,6 @@ DRAM_ATTR static const lcd_init_cmd_t st_init_cmds[] = {
 };
 
 
-
 void lcd_cmd(spi_device_handle_t spi, const uint8_t cmd) {
     esp_err_t ret;
     spi_transaction_t t;
@@ -97,7 +96,6 @@ void lcd_spi_pre_transfer_callback(spi_transaction_t *t) {
     int dc = (int) t->user;
     gpio_set_level(PIN_NUM_DC, dc);
 }
-
 
 
 //Initialize the display
@@ -273,11 +271,12 @@ void dispProgress(int k) {
     fillRect(20, 10, k * 2, 20, 0x1F00);
     dispLine(3);
 }
+
 static TaskHandle_t disp_task_h;
-xQueueHandle  disp_evt_queue = NULL;
+xQueueHandle disp_evt_queue = NULL;
 
 static void disp_task(void *pvParameters) {
-    disp_evt_queue= xQueueCreate(10, sizeof(uint32_t));
+    disp_evt_queue = xQueueCreate(10, sizeof(uint32_t));
     esp_err_t ret;
     spi_device_handle_t spi;
     spi_bus_config_t buscfg = {
@@ -307,28 +306,34 @@ static void disp_task(void *pvParameters) {
     clearScreen(0xffff);
     dispAll();
     uint32_t io_num;
-    while (1){
+    while (1) {
         xQueueReceive(disp_evt_queue, &io_num, portMAX_DELAY);
-        switch(io_num){
+        switch (io_num) {
             case 1:
                 clearScreen(0xffff);
-                drawString(k1,50,10,0x0,0xffff);
+                drawString(k1, 50, 10, 0x0, 0xffff);
                 dispLine(1);
 
-            break;
+                break;
             case 2:
                 clearScreen(0xffff);
-                drawString(k2,10,10,0x0,0xffff);
+                drawString(k2, 10, 10, 0x0, 0xffff);
                 dispLine(1);
 
-            break;
+                break;
+            case 3:
+                clearScreen(0xffff);
+                drawString(k4, 10, 10, 0x0, 0xffff);
+                dispLine(1);
+
+                break;
             default:
                 break;
         }
     }
 }
 
-void initScreen(){
+void initScreen() {
 
 
     xTaskCreatePinnedToCore(disp_task, "disp", 4096, NULL, configMAX_PRIORITIES, &disp_task_h, 1);

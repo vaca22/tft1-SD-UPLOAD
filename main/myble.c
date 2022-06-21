@@ -12,6 +12,8 @@
 #include "host/ble_hs.h"
 #include "host/util/util.h"
 #include "console/console.h"
+#include "myScreen.h"
+
 send_uart_callback *uart_send=NULL;
 struct os_mbuf *om;
 uint16_t hrs_hrm_handle;
@@ -260,7 +262,7 @@ static int
 bleprph_gap_event(struct ble_gap_event *event, void *arg) {
     struct ble_gap_conn_desc desc;
     int rc;
-
+    int num;
     switch (event->type) {
         case BLE_GAP_EVENT_CONNECT:
             ble_connect_flag=1;
@@ -271,6 +273,8 @@ bleprph_gap_event(struct ble_gap_event *event, void *arg) {
                         event->connect.status);
             if (event->connect.status == 0) {
                 rc = ble_gap_conn_find(event->connect.conn_handle, &desc);
+                num=3;
+                xQueueSend(disp_evt_queue, &num, NULL);
             }
             MODLOG_DFLT(INFO, "\n");
 
