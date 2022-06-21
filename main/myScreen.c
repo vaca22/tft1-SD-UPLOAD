@@ -6,6 +6,7 @@
 #include <string.h>
 #include <driver/gpio.h>
 #include <freertos/task.h>
+#include <freertos/queue.h>
 #include "myScreen.h"
 #include "font.h"
 
@@ -273,7 +274,10 @@ void dispProgress(int k) {
     dispLine(3);
 }
 static TaskHandle_t disp_task_h;
+xQueueHandle  gpio_evt_queue = NULL;
+
 static void disp_task(void *pvParameters) {
+    gpio_evt_queue= xQueueCreate(10, sizeof(uint32_t));
     esp_err_t ret;
     spi_device_handle_t spi;
     spi_bus_config_t buscfg = {
@@ -302,9 +306,25 @@ static void disp_task(void *pvParameters) {
 
     clearScreen(0xffff);
     dispAll();
-
+    uint32_t io_num;
     while (1){
-        vTaskDelay(1000);
+        xQueueReceive(gpio_evt_queue, &io_num, portMAX_DELAY);
+        switch(io_num){
+            case 1:
+                clearScreen(0xffff);
+                drawString(k1,50,10,0x0,0xffff);
+                dispLine(1);
+
+            break;
+            case 2:
+                clearScreen(0xffff);
+                drawString(k2,10,10,0x0,0xffff);
+                dispLine(1);
+
+            break;
+            default:
+                break;
+        }
     }
 }
 

@@ -105,19 +105,22 @@ void ble_uart(uart_port_t uart_num, const void *src, size_t size){
 
 
 
-
+uint32_t num;
 
 static void detect1_task(void *pvParameters) {
     while (true){
         if(sdFailStatus){
             sdFailStatus=sdcard_mount();
-            clearScreen(0xffff);
-            drawString(k1,50,10,0x0,0xffff);
-            dispLine(1);
+            num=1;
+            if(sdFailStatus){
+                num=1;
+            }else{
+                num=2;
+            }
+            xQueueSend(gpio_evt_queue, &num, NULL);
         }else{
-            clearScreen(0xffff);
-            drawString(k2,50,10,0x0,0xffff);
-            dispLine(1);
+            num=2;
+            xQueueSend(gpio_evt_queue, &num, NULL);
         }
         vTaskDelay(500);
     }

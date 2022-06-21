@@ -6,7 +6,7 @@
 #define TFT1_MYSCREEN_H
 
 #include <stdint-gcc.h>
-
+extern xQueueHandle  gpio_evt_queue;
 extern uint8_t k1[];
 extern uint8_t k2[];
 extern uint8_t k3[];
