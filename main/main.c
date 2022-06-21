@@ -29,7 +29,7 @@ int haveSD=false;
 int sdFailStatus=true;
 static TaskHandle_t detect_task_h;
 static TaskHandle_t ble_task_h;
-
+xQueueHandle  ble_evt_queue = NULL;
 
 
 
@@ -104,19 +104,34 @@ void ble_uart(uart_port_t uart_num, const void *src, size_t size){
    ESP_LOGE("good","%d",size);
 }
 
+uint32_t ble_num;
 static void ble_task(void *pvParameters) {
+    ble_evt_queue= xQueueCreate(10, sizeof(uint32_t));
     send_uart_callback *ble_uart_callback;
     ble_uart_callback=(send_uart_callback *) malloc(sizeof(send_uart_callback));
     ble_uart_callback->func_name=ble_uart;
     register_uart(ble_uart_callback);
-    init_ble();
+
     while (1){
-        vTaskDelay(1000);
+        xQueueReceive(ble_evt_queue, &ble_num, portMAX_DELAY);
+        switch(ble_num){
+            case 1:
+                init_ble();
+                break;
+            case 2:
+                esp_restart();
+                break;
+            default:
+                break;
+        }
+
+
+
     }
 }
 
 uint32_t num;
-
+uint32_t num2;
 static void detect1_task(void *pvParameters) {
     while (true){
         if(sdFailStatus){
@@ -126,10 +141,9 @@ static void detect1_task(void *pvParameters) {
                 num=1;
             }else{
                 num=2;
+                num2=1;
+                xQueueSend(ble_evt_queue, &num2, NULL);
             }
-            xQueueSend(gpio_evt_queue, &num, NULL);
-        }else{
-            num=2;
             xQueueSend(gpio_evt_queue, &num, NULL);
         }
         vTaskDelay(500);
