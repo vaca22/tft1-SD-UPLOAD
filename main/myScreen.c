@@ -1,36 +1,13 @@
-/* SPI Master example
+//
+// Created by vaca on 6/21/22.
+//
 
-   This example code is in the Public Domain (or CC0 licensed, at your option.)
-
-   Unless required by applicable law or agreed to in writing, this
-   software is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR
-   CONDITIONS OF ANY KIND, either express or implied.
-*/
-#include <stdio.h>
-#include <stdlib.h>
+#include <driver/spi_master.h>
 #include <string.h>
-#include <esp_log.h>
-#include <esp_vfs_fat.h>
-#include <driver/sdmmc_host.h>
-#include <sdmmc_cmd.h>
-#include <nvs_flash.h>
-#include "freertos/FreeRTOS.h"
-#include "freertos/task.h"
-#include "esp_system.h"
-#include "driver/spi_master.h"
-#include "driver/gpio.h"
-#include "myble.h"
+#include <driver/gpio.h>
+#include <freertos/task.h>
+#include "myScreen.h"
 #include "font.h"
-
-char *ble_name = "lghGood";
-static const char *TAG = "HTTP_CLIENT";
-int haveSD=false;
-int sdFailStatus=true;
-static TaskHandle_t detect_task_h;
-
-
-
-
 
 #define LCD_HOST    SPI2_HOST
 
@@ -50,9 +27,8 @@ spi_device_handle_t *mySpi;
 typedef struct {
     uint8_t cmd;
     uint8_t data[16];
-    uint8_t databytes; //No of data in data; bit 7 = delay after set; 0xFF = end of cmds.
+    uint8_t databytes;
 } lcd_init_cmd_t;
-
 
 DRAM_ATTR static const lcd_init_cmd_t st_init_cmds[] = {
         {0x11, {0},                                                                                  0x80},
@@ -90,6 +66,7 @@ DRAM_ATTR static const lcd_init_cmd_t st_init_cmds[] = {
 };
 
 
+
 void lcd_cmd(spi_device_handle_t spi, const uint8_t cmd) {
     esp_err_t ret;
     spi_transaction_t t;
@@ -119,6 +96,7 @@ void lcd_spi_pre_transfer_callback(spi_transaction_t *t) {
     int dc = (int) t->user;
     gpio_set_level(PIN_NUM_DC, dc);
 }
+
 
 
 //Initialize the display
@@ -165,15 +143,15 @@ static void send_lines(spi_device_handle_t spi, int ypos, uint16_t *linedata) {
         trans[x].flags = SPI_TRANS_USE_TXDATA;
     }
     trans[0].tx_data[0] = 0x2A;           //Column Address Set
-    trans[1].tx_data[0] = (0)>>8;              //Start Col High
-    trans[1].tx_data[1] = (0)&0XFF;              //Start Col Low
-    trans[1].tx_data[2] = (240  - 1) >> 8;       //End Col High
-    trans[1].tx_data[3] = (240  - 1) & 0xff;     //End Col Low
+    trans[1].tx_data[0] = (0) >> 8;              //Start Col High
+    trans[1].tx_data[1] = (0) & 0XFF;              //Start Col Low
+    trans[1].tx_data[2] = (240 - 1) >> 8;       //End Col High
+    trans[1].tx_data[3] = (240 - 1) & 0xff;     //End Col Low
     trans[2].tx_data[0] = 0x2B;           //Page address set
-    trans[3].tx_data[0] = (ypos ) >> 8;        //Start page high
-    trans[3].tx_data[1] = (ypos ) & 0xff;      //start page low
-    trans[3].tx_data[2] = (ypos + PARALLEL_LINES  - 1) >> 8;    //end page high
-    trans[3].tx_data[3] = (ypos + PARALLEL_LINES  - 1) & 0xff;  //end page low
+    trans[3].tx_data[0] = (ypos) >> 8;        //Start page high
+    trans[3].tx_data[1] = (ypos) & 0xff;      //start page low
+    trans[3].tx_data[2] = (ypos + PARALLEL_LINES - 1) >> 8;    //end page high
+    trans[3].tx_data[3] = (ypos + PARALLEL_LINES - 1) & 0xff;  //end page low
     trans[4].tx_data[0] = 0x2C;           //memory write
     trans[5].tx_buffer = linedata;        //finally send the line data
     trans[5].length = 240 * 2 * 8 * PARALLEL_LINES;          //Data length, in bits
@@ -205,220 +183,97 @@ typedef unsigned char u8;
 #define WHITE             0xFFFF
 
 
-void LCD_WR_REG(u8 dat) {
-    lcd_cmd(*mySpi, dat);
-}
-
-void LCD_WR_DATA(u16 dat) {
-    uint8_t data[] = {dat >> 8, dat};
-    lcd_data(*mySpi, data, 1);
-    lcd_data(*mySpi, data + 1, 1);
-}
-
-void LCD_Address_Set(u16 x1, u16 y1, u16 x2, u16 y2) {
-    LCD_WR_REG(0x2a);
-    LCD_WR_DATA(x1 + 0);
-    LCD_WR_DATA(x2 + 0);
-    LCD_WR_REG(0x2b);
-    LCD_WR_DATA(y1 + 0);
-    LCD_WR_DATA(y2 + 0);
-    LCD_WR_REG(0x2c);
-}
-
-void LCD_Fill(u16 xsta, u16 ysta, u16 xend, u16 yend, u16 color) {
-    u16 i, j;
-    LCD_Address_Set(xsta, ysta, xend - 1, yend - 1);
-    for (i = ysta; i < yend; i++) {
-        for (j = xsta; j < xend; j++) {
-            LCD_WR_DATA(color);
-        }
-    }
-}
-
-
 uint16_t scr[14400];
 //请插入设备
-uint8_t k1[]={5,0,1,2,3,4};
+uint8_t k1[] = {5, 0, 1, 2, 3, 4};
 
 //已检测到设备，请链接蓝牙
-uint8_t k2[]={12,5,6,7,8,3,4,9,0,10,11,17,18};
+uint8_t k2[] = {12, 5, 6, 7, 8, 3, 4, 9, 0, 10, 11, 17, 18};
 
 //设备错误，请重新插拔
-uint8_t k3[]={10,3,4,12,13,9,0,14,15,16,1};
+uint8_t k3[] = {10, 3, 4, 12, 13, 9, 0, 14, 15, 16, 1};
 
 //蓝牙链接成功，等待设置
-uint8_t k4[]={11,17,18,10,11,19,20,9,21,22,3,23};
+uint8_t k4[] = {11, 17, 18, 10, 11, 19, 20, 9, 21, 22, 3, 23};
 
 //传输失败
-uint8_t k5[]={4,26,27,24,25};
+uint8_t k5[] = {4, 26, 27, 24, 25};
 
 //传输成功，请拔除设备
-uint8_t k6[]={10,26,27,19,20,9,0,16,28,3,4};
+uint8_t k6[] = {10, 26, 27, 19, 20, 9, 0, 16, 28, 3, 4};
 
 
-void drawChar(int x1, int y1,uint8_t *z1,uint16_t frontColor, uint16_t backColor){
-    for(int k=0;k<16;k++){
-        for(int j=0;j<2;j++){
-            int x=2*k+j;
-            int y=z1[x];
-            for(int i=0;i<8;i++){
-                if(y&(1<<(7-i))){
-                    scr[k*240+i+j*8+x1+y1*240]=frontColor;
-                }else{
-                    scr[k*240+i+j*8+x1+y1*240]=backColor;
+void drawChar(int x1, int y1, uint8_t *z1, uint16_t frontColor, uint16_t backColor) {
+    for (int k = 0; k < 16; k++) {
+        for (int j = 0; j < 2; j++) {
+            int x = 2 * k + j;
+            int y = z1[x];
+            for (int i = 0; i < 8; i++) {
+                if (y & (1 << (7 - i))) {
+                    scr[k * 240 + i + j * 8 + x1 + y1 * 240] = frontColor;
+                } else {
+                    scr[k * 240 + i + j * 8 + x1 + y1 * 240] = backColor;
                 }
             }
         }
     }
 }
 
-void drawString(uint8_t* ss,int x1,int y1,uint16_t frontColor, uint16_t backColor){
-    int len=ss[0]+1;
-    for(int k=1;k<len;k++){
-        drawChar(x1+k*16, y1, &myFont[ss[k] * 32], frontColor, backColor);
+void drawString(uint8_t *ss, int x1, int y1, uint16_t frontColor, uint16_t backColor) {
+    int len = ss[0] + 1;
+    for (int k = 1; k < len; k++) {
+        drawChar(x1 + k * 16, y1, &myFont[ss[k] * 32], frontColor, backColor);
     }
 
 }
 
-void clearScreen(uint16_t color){
+void clearScreen(uint16_t color) {
     for (int k = 0; k < 14400; k++) {
-        scr[k] =color;
+        scr[k] = color;
     }
 }
 
-void drawRect(int x,int y, int w,int h,uint16_t color){
-    for(int k=0;k<w;k++){
-        scr[x+k+y*LCD_W]=color;
-        scr[x+k+(y+h)*LCD_W]=color;
+void drawRect(int x, int y, int w, int h, uint16_t color) {
+    for (int k = 0; k < w; k++) {
+        scr[x + k + y * LCD_W] = color;
+        scr[x + k + (y + h) * LCD_W] = color;
     }
-    for(int k=0;k<h;k++){
-        scr[x+(y+k)*LCD_W]=color;
-        scr[x+w+(y+k)*LCD_W]=color;
+    for (int k = 0; k < h; k++) {
+        scr[x + (y + k) * LCD_W] = color;
+        scr[x + w + (y + k) * LCD_W] = color;
     }
 }
 
-void fillRect(int x,int y, int w,int h,uint16_t color){
-    for(int j=0;j<w;j++){
-        for(int k=0;k<h;k++){
-            scr[x+j+(y+k)*LCD_W]=color;
+void fillRect(int x, int y, int w, int h, uint16_t color) {
+    for (int j = 0; j < w; j++) {
+        for (int k = 0; k < h; k++) {
+            scr[x + j + (y + k) * LCD_W] = color;
         }
     }
 }
 
 
-
-void dispLine(int x){
-    if(x>=0&&x<4){
-        send_lines(*mySpi, x*PARALLEL_LINES, scr);
+void dispLine(int x) {
+    if (x >= 0 && x < 4) {
+        send_lines(*mySpi, x * PARALLEL_LINES, scr);
         send_line_finish(*mySpi);
     }
 }
 
-void dispAll(){
-    for(int k=0;k<4;k++){
+void dispAll() {
+    for (int k = 0; k < 4; k++) {
         dispLine(k);
     }
 }
-void dispProgress(int k){
+
+void dispProgress(int k) {
     clearScreen(0xffff);
-    drawRect(20,10,200,20,0x1F00);
-    fillRect(20,10,k*2,20,0x1F00);
+    drawRect(20, 10, 200, 20, 0x1F00);
+    fillRect(20, 10, k * 2, 20, 0x1F00);
     dispLine(3);
 }
-
-
-
-
-
-#define MOUNT_POINT "/sdcard"
-
-int sdcard_mount(void)
-{
-    esp_err_t ret;
-    esp_vfs_fat_sdmmc_mount_config_t mount_config = {
-            .format_if_mount_failed = false,
-            .max_files = 5,
-            .allocation_unit_size = 16 * 1024
-    };
-    sdmmc_card_t *card;
-    const char mount_point[] = MOUNT_POINT;
-    ESP_LOGI(TAG, "Initializing SD card");
-
-
-    ESP_LOGI(TAG, "Using SDMMC peripheral");
-    sdmmc_host_t host = SDMMC_HOST_DEFAULT();
-
-    sdmmc_slot_config_t slot_config = SDMMC_SLOT_CONFIG_DEFAULT();
-
-    slot_config.width = 1;
-
-    slot_config.clk = GPIO_NUM_3;
-    slot_config.cmd = GPIO_NUM_4;
-    slot_config.d0 = GPIO_NUM_14;
-    slot_config.d1 = GPIO_NUM_8;
-    slot_config.d2 = GPIO_NUM_12;
-    slot_config.d3 = GPIO_NUM_8;
-
-    slot_config.flags |= SDMMC_SLOT_FLAG_INTERNAL_PULLUP;
-
-    ESP_LOGI(TAG, "Mounting filesystem");
-    ret = esp_vfs_fat_sdmmc_mount(mount_point, &host, &slot_config, &mount_config, &card);
-
-    if (ret != ESP_OK) {
-
-        return 1;
-    }
-    ESP_LOGI(TAG, "Filesystem mounted");
-
-
-    sdmmc_card_print_info(stdout, card);
-    return 0;
-
-
-}
-
-
-void ble_uart(uart_port_t uart_num, const void *src, size_t size){
-   ESP_LOGE("good","%d",size);
-}
-
-
-
-
-
-static void detect1_task(void *pvParameters) {
-    while (true){
-        if(sdFailStatus){
-            sdFailStatus=sdcard_mount();
-            clearScreen(0xffff);
-            drawString(k1,50,10,0x0,0xffff);
-            dispLine(1);
-        }else{
-            clearScreen(0xffff);
-            drawString(k2,50,10,0x0,0xffff);
-            dispLine(1);
-        }
-        vTaskDelay(500);
-    }
-
-}
-
-
-void n1(){
-    clearScreen(0xffff);
-    drawString(k1,10,5,0,0xffff);
-    dispLine(1);
-}
-static void initialize_nvs(void) {
-    esp_err_t err = nvs_flash_init();
-    if (err == ESP_ERR_NVS_NO_FREE_PAGES || err == ESP_ERR_NVS_NEW_VERSION_FOUND) {
-        ESP_ERROR_CHECK(nvs_flash_erase());
-        err = nvs_flash_init();
-    }
-    ESP_ERROR_CHECK(err);
-}
-void app_main(void) {
-    initialize_nvs();
+static TaskHandle_t disp_task_h;
+static void disp_task(void *pvParameters) {
     esp_err_t ret;
     spi_device_handle_t spi;
     spi_bus_config_t buscfg = {
@@ -448,23 +303,14 @@ void app_main(void) {
     clearScreen(0xffff);
     dispAll();
 
+    while (1){
+        vTaskDelay(1000);
+    }
+}
+
+void initScreen(){
 
 
-
-//    for(int k=0;k<=100;k++){
-//        dispProgress(k);
-//        vTaskDelay(10);
-//    }
-
-    xTaskCreatePinnedToCore(detect1_task, "detect", 4096, NULL, configMAX_PRIORITIES, &detect_task_h, 1);
-
-
-    send_uart_callback *ble_uart_callback;
-    ble_uart_callback=(send_uart_callback *) malloc(sizeof(send_uart_callback));
-    ble_uart_callback->func_name=ble_uart;
-    register_uart(ble_uart_callback);
-    init_ble();
-
-    ESP_LOGE(TAG, "Good Good Good");
+    xTaskCreatePinnedToCore(disp_task, "disp", 4096, NULL, configMAX_PRIORITIES, &disp_task_h, 1);
 
 }
