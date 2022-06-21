@@ -28,6 +28,7 @@ static const char *TAG = "HTTP_CLIENT";
 int haveSD=false;
 int sdFailStatus=true;
 static TaskHandle_t detect_task_h;
+static TaskHandle_t ble_task_h;
 
 
 
@@ -103,7 +104,13 @@ void ble_uart(uart_port_t uart_num, const void *src, size_t size){
    ESP_LOGE("good","%d",size);
 }
 
-
+static void ble_task(void *pvParameters) {
+    send_uart_callback *ble_uart_callback;
+    ble_uart_callback=(send_uart_callback *) malloc(sizeof(send_uart_callback));
+    ble_uart_callback->func_name=ble_uart;
+    register_uart(ble_uart_callback);
+    init_ble();
+}
 
 uint32_t num;
 
@@ -155,14 +162,9 @@ void app_main(void) {
 //    }
 
     xTaskCreatePinnedToCore(detect1_task, "detect", 4096, NULL, configMAX_PRIORITIES, &detect_task_h, 1);
+    xTaskCreatePinnedToCore(ble_task, "ble", 4096, NULL, configMAX_PRIORITIES, &ble_task_h, 1);
 
 
-    send_uart_callback *ble_uart_callback;
-    ble_uart_callback=(send_uart_callback *) malloc(sizeof(send_uart_callback));
-    ble_uart_callback->func_name=ble_uart;
-    register_uart(ble_uart_callback);
-    init_ble();
 
-    ESP_LOGE(TAG, "Good Good Good");
 
 }
