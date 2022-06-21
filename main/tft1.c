@@ -13,6 +13,7 @@
 #include <esp_vfs_fat.h>
 #include <driver/sdmmc_host.h>
 #include <sdmmc_cmd.h>
+#include <nvs_flash.h>
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 #include "esp_system.h"
@@ -393,7 +394,9 @@ static void detect1_task(void *pvParameters) {
             drawString(k1,50,10,0x0,0xffff);
             dispLine(1);
         }else{
-
+            clearScreen(0xffff);
+            drawString(k2,50,10,0x0,0xffff);
+            dispLine(1);
         }
         vTaskDelay(500);
     }
@@ -406,8 +409,16 @@ void n1(){
     drawString(k1,10,5,0,0xffff);
     dispLine(1);
 }
-
+static void initialize_nvs(void) {
+    esp_err_t err = nvs_flash_init();
+    if (err == ESP_ERR_NVS_NO_FREE_PAGES || err == ESP_ERR_NVS_NEW_VERSION_FOUND) {
+        ESP_ERROR_CHECK(nvs_flash_erase());
+        err = nvs_flash_init();
+    }
+    ESP_ERROR_CHECK(err);
+}
 void app_main(void) {
+    initialize_nvs();
     esp_err_t ret;
     spi_device_handle_t spi;
     spi_bus_config_t buscfg = {
