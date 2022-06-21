@@ -25,6 +25,13 @@
 #define PARALLEL_LINES 60
 spi_device_handle_t *mySpi;
 
+extern const unsigned char s1_start[] asm("_binary_s1_jpg_start");
+extern const unsigned char s2_start[] asm("_binary_s2_jpg_start");
+extern const unsigned char s3_start[] asm("_binary_s3_jpg_start");
+extern const unsigned char s4_start[] asm("_binary_s4_jpg_start");
+extern const unsigned char s5_start[] asm("_binary_s5_jpg_start");
+
+
 typedef struct {
     uint8_t cmd;
     uint8_t data[16];
