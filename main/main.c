@@ -17,6 +17,7 @@
 #include <nimble/nimble_port_freertos.h>
 #include <nimble/nimble_port.h>
 #include <host/ble_gap.h>
+#include <cJSON.h>
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 #include "esp_system.h"
@@ -179,7 +180,14 @@ void app_main(void) {
 
     initScreen();
 
-
+    cJSON *json = cJSON_Parse("{\"fuck\":\"1\"}");
+    if (json != NULL)
+    {
+        cJSON* fuck=cJSON_GetObjectItemCaseSensitive(json,"fuck");
+        ESP_LOGE("fuck","%s",fuck->valuestring);
+    }else{
+        ESP_LOGE("fuck","fafa");
+    }
 
 //    for(int k=0;k<=100;k++){
 //        dispProgress(k);
