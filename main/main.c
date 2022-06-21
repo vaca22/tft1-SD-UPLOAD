@@ -110,6 +110,9 @@ static void ble_task(void *pvParameters) {
     ble_uart_callback->func_name=ble_uart;
     register_uart(ble_uart_callback);
     init_ble();
+    while (1){
+        vTaskDelay(1000);
+    }
 }
 
 uint32_t num;
