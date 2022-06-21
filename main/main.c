@@ -144,7 +144,7 @@ static void detect1_task(void *pvParameters) {
                 num2=1;
                 xQueueSend(ble_evt_queue, &num2, NULL);
             }
-            xQueueSend(gpio_evt_queue, &num, NULL);
+            xQueueSend(disp_evt_queue, &num, NULL);
         }
         vTaskDelay(500);
     }

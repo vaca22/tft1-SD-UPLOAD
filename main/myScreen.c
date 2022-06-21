@@ -274,10 +274,10 @@ void dispProgress(int k) {
     dispLine(3);
 }
 static TaskHandle_t disp_task_h;
-xQueueHandle  gpio_evt_queue = NULL;
+xQueueHandle  disp_evt_queue = NULL;
 
 static void disp_task(void *pvParameters) {
-    gpio_evt_queue= xQueueCreate(10, sizeof(uint32_t));
+    disp_evt_queue= xQueueCreate(10, sizeof(uint32_t));
     esp_err_t ret;
     spi_device_handle_t spi;
     spi_bus_config_t buscfg = {
@@ -308,7 +308,7 @@ static void disp_task(void *pvParameters) {
     dispAll();
     uint32_t io_num;
     while (1){
-        xQueueReceive(gpio_evt_queue, &io_num, portMAX_DELAY);
+        xQueueReceive(disp_evt_queue, &io_num, portMAX_DELAY);
         switch(io_num){
             case 1:
                 clearScreen(0xffff);
