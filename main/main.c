@@ -109,8 +109,20 @@ void ble_uart( const void *src, size_t size){
    ESP_LOGE("good","%d",size);
 
 
+
+
+    cJSON *json = cJSON_Parse(src);
+    if (json != NULL)
+    {
+        cJSON* fuck=cJSON_GetObjectItemCaseSensitive(json,"x1");
+        ESP_LOGE("fuck","%s",fuck->valuestring);
+    }else{
+        ESP_LOGE("fuck","fafa");
+    }
     nimble_port_freertos_deinit();
+    ESP_LOGE("good2","aa");
     nimble_port_deinit();
+    ESP_LOGE("good1","bb");
 }
 
 uint32_t ble_num;
@@ -180,14 +192,7 @@ void app_main(void) {
 
     initScreen();
 
-    cJSON *json = cJSON_Parse("{\"fuck\":\"1\"}");
-    if (json != NULL)
-    {
-        cJSON* fuck=cJSON_GetObjectItemCaseSensitive(json,"fuck");
-        ESP_LOGE("fuck","%s",fuck->valuestring);
-    }else{
-        ESP_LOGE("fuck","fafa");
-    }
+
 
 //    for(int k=0;k<=100;k++){
 //        dispProgress(k);
