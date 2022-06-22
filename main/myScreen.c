@@ -395,7 +395,7 @@ static void disp_task(void *pvParameters) {
                 drawString(k41, 10, 10, 0x0, 0xffff);
                 drawASCiiString("WIFI",135,10,0,0xFFFF);
                 drawString(k42, 158, 10, 0x0, 0xffff);
-                dispLine(2);
+                dispLine(1);
             default:
                 break;
         }

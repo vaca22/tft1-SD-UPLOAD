@@ -339,6 +339,8 @@ static void ble_task(void *pvParameters) {
                 init_ble();
                 break;
             case 2:
+                disp_msg=4;
+                xQueueSend(disp_evt_queue, &disp_msg, NULL);
                 wifi_init_sta();
                 break;
             default:
@@ -367,7 +369,6 @@ void app_main(void) {
     xTaskCreatePinnedToCore(ble_task, "ble", 4096, NULL, configMAX_PRIORITIES, &ble_task_h, 1);
 
 
-    disp_msg=4;
-    xQueueSend(disp_evt_queue, &disp_msg, NULL);
+
 
 }
