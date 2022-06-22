@@ -366,7 +366,8 @@ void app_main(void) {
     xTaskCreatePinnedToCore(detect1_task, "detect", 4096, NULL, configMAX_PRIORITIES, &detect_task_h, 1);
     xTaskCreatePinnedToCore(ble_task, "ble", 4096, NULL, configMAX_PRIORITIES, &ble_task_h, 1);
 
-//    disp_msg=11;
-//    xQueueSend(disp_evt_queue, &disp_msg, NULL);
+
+    disp_msg=4;
+    xQueueSend(disp_evt_queue, &disp_msg, NULL);
 
 }
