@@ -212,7 +212,7 @@ static void detect1_task(void *pvParameters) {
             }
             xQueueSend(disp_evt_queue, &disp_msg, NULL);
         }
-        vTaskDelay(500);
+        vTaskDelay(300);
         if (wifi_connect_flag) {
             wifi_ap_record_t ap_info;
             esp_wifi_sta_get_ap_info(&ap_info);
