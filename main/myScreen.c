@@ -253,7 +253,7 @@ void drawString(uint8_t *ss, int x1, int y1, uint16_t frontColor, uint16_t backC
 void drawASCiiString(char *ss, int x1, int y1, uint16_t frontColor, uint16_t backColor) {
     int len = strlen(ss);
     for (int k = 0; k < len; k++) {
-        drawCharAscii(x1 + k * 10, y1, &myAsciiFont[ss[k] * 32], frontColor, backColor);
+        drawCharAscii(x1 + k * 9, y1, &myAsciiFont[ss[k] * 32], frontColor, backColor);
     }
 
 }
@@ -361,7 +361,7 @@ static void disp_task(void *pvParameters) {
     lcd_init(spi);
 
     clearScreen(0xffff);
-    drawASCiiString("FUCK",1,1,0x0,0xffff);
+    drawASCiiString("wifi",1,1,0x0,0xffff);
     dispAll();
 
 
