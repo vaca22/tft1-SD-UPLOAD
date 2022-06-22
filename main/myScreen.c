@@ -10,6 +10,7 @@
 #include "myScreen.h"
 #include "font.h"
 #include "decode_image.h"
+#include "ascii.h"
 
 #define LCD_HOST    SPI2_HOST
 
@@ -225,11 +226,34 @@ void drawChar(int x1, int y1, uint8_t *z1, uint16_t frontColor, uint16_t backCol
         }
     }
 }
+void drawCharAscii(int x1, int y1, uint8_t *z1, uint16_t frontColor, uint16_t backColor) {
+    for (int k = 0; k < 16; k++) {
+        for (int j = 0; j < 2; j++) {
+            int x = 2 * k + j;
+            int y = z1[x];
+            for (int i = 0; i < 8; i++) {
+                if (y & (1 << (7 - i))) {
+                    scr[k * 240 + i + j * 8 + x1 + y1 * 240] &= frontColor;
+                } else {
+                    scr[k * 240 + i + j * 8 + x1 + y1 * 240] &= backColor;
+                }
+            }
+        }
+    }
+}
 
 void drawString(uint8_t *ss, int x1, int y1, uint16_t frontColor, uint16_t backColor) {
     int len = ss[0] + 1;
     for (int k = 1; k < len; k++) {
         drawChar(x1 + k * 16, y1, &myFont[ss[k] * 32], frontColor, backColor);
+    }
+
+}
+
+void drawASCiiString(char *ss, int x1, int y1, uint16_t frontColor, uint16_t backColor) {
+    int len = strlen(ss);
+    for (int k = 0; k < len; k++) {
+        drawCharAscii(x1 + k * 10, y1, &myAsciiFont[ss[k] * 32], frontColor, backColor);
     }
 
 }
@@ -337,6 +361,7 @@ static void disp_task(void *pvParameters) {
     lcd_init(spi);
 
     clearScreen(0xffff);
+    drawASCiiString("FUCK",1,1,0x0,0xffff);
     dispAll();
 
 
