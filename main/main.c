@@ -53,6 +53,7 @@ uint32_t ble_msg;
 
 uint8_t wifi_name[32];
 uint8_t wifi_password[64];
+char    file_name[32];
 
 
 #define LCD_HOST    SPI2_HOST
