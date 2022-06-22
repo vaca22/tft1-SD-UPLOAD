@@ -327,7 +327,7 @@ void dispImg(int index){
         default:break;
     }
 
-    clearScreen(0xffff);
+//    clearScreen(0xffff);
     for(int k=0;k<48;k++){
         for(int j=0;j<48;j++){
             scr[k*240+j+180]=pixels[k][j];
@@ -340,6 +340,8 @@ void dispImg(int index){
 
 static TaskHandle_t disp_task_h;
 xQueueHandle disp_evt_queue = NULL;
+
+extern char    file_name[32];
 
 static void disp_task(void *pvParameters) {
     disp_evt_queue = xQueueCreate(10, sizeof(uint32_t));
@@ -388,6 +390,9 @@ static void disp_task(void *pvParameters) {
                 clearScreen(0xffff);
                 drawString(k2, 10, 10, 0x0, 0xffff);
                 dispLine(1);
+                clearScreen(0xffff);
+                drawASCiiString(file_name, 10, 10, 0x0, 0xffff);
+                dispLine(0);
 
                 break;
             case 3:

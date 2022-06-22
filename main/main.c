@@ -53,7 +53,7 @@ uint32_t ble_msg;
 
 uint8_t wifi_name[32];
 uint8_t wifi_password[64];
-char    file_name[32];
+char    file_name[32]={0};
 
 
 #define LCD_HOST    SPI2_HOST
@@ -178,9 +178,6 @@ static void detect1_task(void *pvParameters) {
             if (sdFailStatus) {
                 disp_msg = 1;
             } else {
-                disp_msg = 2;
-                ble_msg = 1;
-                xQueueSend(ble_evt_queue, &ble_msg, NULL);
                 char entrypath[FILE_PATH_MAX];
                 struct dirent *entry;
                 const char *entrytype;
@@ -203,8 +200,13 @@ static void detect1_task(void *pvParameters) {
                     if(entry_stat.st_size<1000000){
                         continue;
                     }
+                    memcpy(file_name,entry->d_name, strlen(entry->d_name)+1);
                     ESP_LOGE("fuck","%s   %s   %ld",entrytype,entry->d_name,entry_stat.st_size);
                 }
+
+                disp_msg = 2;
+                ble_msg = 1;
+                xQueueSend(ble_evt_queue, &ble_msg, NULL);
 
 
             }
