@@ -106,11 +106,6 @@ int sdcard_mount(void)
 
 
 void ble_uart( const void *src, size_t size){
-   ESP_LOGE("good","%d",size);
-
-
-
-
     cJSON *json = cJSON_Parse(src);
     if (json != NULL)
     {
