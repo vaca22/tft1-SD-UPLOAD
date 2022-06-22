@@ -294,6 +294,7 @@ void dispImg(int index){
         default:break;
     }
 
+
     for(int k=0;k<48;k++){
         for(int j=0;j<48;j++){
             scr[k*240+j+190]=pixels[k][j];
@@ -337,15 +338,8 @@ static void disp_task(void *pvParameters) {
 
     clearScreen(0xffff);
     dispAll();
-    int n=1;
-    while (1){
-        dispImg(n);
-        n++;
-        if(n>5){
-            n=1;
-        }
-        vTaskDelay(20);
-    }
+
+
 
     uint32_t io_num;
     while (1) {
@@ -371,6 +365,9 @@ static void disp_task(void *pvParameters) {
                 break;
             default:
                 break;
+        }
+        if(index>=11&&index<=15){
+            dispImg(index-10);
         }
     }
 }
