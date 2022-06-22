@@ -402,14 +402,17 @@ static void disp_task(void *pvParameters) {
                 drawASCiiString("WIFI",135,10,0,0xFFFF);
                 drawString(k42, 158, 10, 0x0, 0xffff);
                 dispLine(1);
+                break;
             case 5:
                 clearScreen(0xffff);
                 drawString(k43, 10, 10, 0x0, 0xffff);
                 dispLine(1);
+                break;
             case 6:
                 clearScreen(0xffff);
                 drawString(k44, 10, 10, 0x0, 0xffff);
                 dispLine(1);
+                break;
             default:
                 break;
         }

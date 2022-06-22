@@ -289,7 +289,7 @@ void wifi_init_sta(void) {
     /* xEventGroupWaitBits() returns the bits before the call returned, hence we can test which event actually
      * happened. */
     if (bits & WIFI_CONNECTED_BIT) {
-        ESP_LOGI(TAG, "connected to ap SSID:%s password:%s",
+        ESP_LOGE(TAG, "connected to ap SSID:%s password:%s",
                  wifi_name, wifi_password);
         wifi_connect_flag = 1;
         disp_msg = 5;
@@ -297,16 +297,15 @@ void wifi_init_sta(void) {
 
 
     } else if (bits & WIFI_FAIL_BIT) {
-        ESP_LOGI(TAG, "Failed to connect to SSID:%s, password:%s",
+        ESP_LOGE(TAG, "Failed to connect to SSID:%s, password:%s",
                  wifi_name, wifi_password);
+        disp_msg = 6;
+        xQueueSend(disp_evt_queue, &disp_msg, NULL);
     } else {
         ESP_LOGE(TAG, "UNEXPECTED EVENT");
     }
 
-    /* The event will not be processed after unregister */
-//    ESP_ERROR_CHECK(esp_event_handler_instance_unregister(IP_EVENT, IP_EVENT_STA_GOT_IP, instance_got_ip));
-//    ESP_ERROR_CHECK(esp_event_handler_instance_unregister(WIFI_EVENT, ESP_EVENT_ANY_ID, instance_any_id));
-//    vEventGroupDelete(s_wifi_event_group);
+
 }
 
 
@@ -357,7 +356,8 @@ void app_main(void) {
 
 
 
-
+//    disp_msg = 5;
+//    xQueueSend(disp_evt_queue, &disp_msg, NULL);
 //    disp_msg=6;
 //    xQueueSend(disp_evt_queue, &disp_msg, NULL);
 }
