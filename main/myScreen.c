@@ -207,6 +207,12 @@ uint8_t k4[] = {11, 17, 18, 10, 11, 19, 20, 9, 21, 22, 3, 23};
 //蓝牙设置成功，WIFI链接中
 uint8_t k41[] = {7, 17, 18,3, 23,  19, 20, 9};
 uint8_t k42[] = {3, 10, 11,29};
+
+//请按钮开始传输
+uint8_t k43[] = {7, 0, 30,31,32,33,26, 27,};
+//请重新链接
+uint8_t k44[] = {5, 0, 14, 15,10, 11};
+
 //传输失败
 uint8_t k5[] = {4, 26, 27, 24, 25};
 
@@ -395,6 +401,14 @@ static void disp_task(void *pvParameters) {
                 drawString(k41, 10, 10, 0x0, 0xffff);
                 drawASCiiString("WIFI",135,10,0,0xFFFF);
                 drawString(k42, 158, 10, 0x0, 0xffff);
+                dispLine(1);
+            case 5:
+                clearScreen(0xffff);
+                drawString(k43, 10, 10, 0x0, 0xffff);
+                dispLine(1);
+            case 6:
+                clearScreen(0xffff);
+                drawString(k44, 10, 10, 0x0, 0xffff);
                 dispLine(1);
             default:
                 break;

@@ -41,11 +41,11 @@
 
 char *ble_name = "lghGood";
 static const char *TAG = "HTTP_CLIENT";
-int haveSD=false;
-int sdFailStatus=true;
+int haveSD = false;
+int sdFailStatus = true;
 static TaskHandle_t detect_task_h;
 static TaskHandle_t ble_task_h;
-xQueueHandle  ble_evt_queue = NULL;
+xQueueHandle ble_evt_queue = NULL;
 
 uint32_t disp_msg;
 uint32_t ble_msg;
@@ -70,12 +70,11 @@ uint8_t wifi_password[64];
 spi_device_handle_t *mySpi;
 
 
-int wifi_connect_flag=0;
+int wifi_connect_flag = 0;
 
 #define MOUNT_POINT "/sdcard"
 
-int sdcard_mount(void)
-{
+int sdcard_mount(void) {
     esp_err_t ret;
     esp_vfs_fat_sdmmc_mount_config_t mount_config = {
             .format_if_mount_failed = false,
@@ -120,28 +119,27 @@ int sdcard_mount(void)
 }
 
 
-void ble_uart( const void *src, size_t size){
+void ble_uart(const void *src, size_t size) {
     cJSON *json = cJSON_Parse(src);
-    if (json != NULL)
-    {
-        cJSON* receiveN1=cJSON_GetObjectItemCaseSensitive(json, "x1");
-        cJSON* receiveN2=cJSON_GetObjectItemCaseSensitive(json, "x2");
-        cJSON* receiveN3=cJSON_GetObjectItemCaseSensitive(json, "x3");
-        cJSON* receiveN4=cJSON_GetObjectItemCaseSensitive(json, "x4");
-        cJSON* receiveN5=cJSON_GetObjectItemCaseSensitive(json, "x5");
+    if (json != NULL) {
+        cJSON *receiveN1 = cJSON_GetObjectItemCaseSensitive(json, "x1");
+        cJSON *receiveN2 = cJSON_GetObjectItemCaseSensitive(json, "x2");
+        cJSON *receiveN3 = cJSON_GetObjectItemCaseSensitive(json, "x3");
+        cJSON *receiveN4 = cJSON_GetObjectItemCaseSensitive(json, "x4");
+        cJSON *receiveN5 = cJSON_GetObjectItemCaseSensitive(json, "x5");
         ESP_LOGE("re", "%s   %s   %s  %s  %s",
                  receiveN1->valuestring,
                  receiveN2->valuestring,
                  receiveN3->valuestring,
                  receiveN4->valuestring,
                  receiveN5->valuestring);
-        ble_msg=2;
+        ble_msg = 2;
 
-        memcpy(wifi_name,receiveN1->valuestring, strlen(receiveN1->valuestring)+1);
-        memcpy(wifi_password,receiveN2->valuestring, strlen(receiveN2->valuestring)+1);
+        memcpy(wifi_name, receiveN1->valuestring, strlen(receiveN1->valuestring) + 1);
+        memcpy(wifi_password, receiveN2->valuestring, strlen(receiveN2->valuestring) + 1);
         xQueueSend(ble_evt_queue, &ble_msg, NULL);
-    }else{
-        ESP_LOGE("re","no work parse");
+    } else {
+        ESP_LOGE("re", "no work parse");
     }
     nimble_port_freertos_deinit();
 
@@ -154,44 +152,43 @@ const int MIN_RSSI = -80;
 const int MAX_RSSI = -55;
 
 int calculateSignalLevel(int rssi, int numLevels) {
-    if(rssi <= MIN_RSSI) {
+    if (rssi <= MIN_RSSI) {
         return 0;
     } else if (rssi >= MAX_RSSI) {
         return numLevels - 1;
     } else {
-        float inputRange = (MAX_RSSI -MIN_RSSI);
+        float inputRange = (MAX_RSSI - MIN_RSSI);
         float outputRange = (numLevels - 1);
-        return (int)((float)(rssi - MIN_RSSI) * outputRange / inputRange);
+        return (int) ((float) (rssi - MIN_RSSI) * outputRange / inputRange);
     }
 }
 
 static void detect1_task(void *pvParameters) {
-    while (true){
-        if(sdFailStatus){
-            sdFailStatus=sdcard_mount();
-            disp_msg=1;
-            if(sdFailStatus){
-                disp_msg=1;
-            }else{
-                disp_msg=2;
-                ble_msg=1;
+    while (true) {
+        if (sdFailStatus) {
+            sdFailStatus = sdcard_mount();
+            disp_msg = 1;
+            if (sdFailStatus) {
+                disp_msg = 1;
+            } else {
+                disp_msg = 2;
+                ble_msg = 1;
                 xQueueSend(ble_evt_queue, &ble_msg, NULL);
             }
             xQueueSend(disp_evt_queue, &disp_msg, NULL);
         }
         vTaskDelay(500);
-        if(wifi_connect_flag){
+        if (wifi_connect_flag) {
             wifi_ap_record_t ap_info;
             esp_wifi_sta_get_ap_info(&ap_info);
-            int level= calculateSignalLevel(ap_info.rssi,5);
-            disp_msg=level+11;
+            int level = calculateSignalLevel(ap_info.rssi, 5);
+            disp_msg = level + 11;
             xQueueSend(disp_evt_queue, &disp_msg, NULL);
         }
 
     }
 
 }
-
 
 
 static void initialize_nvs(void) {
@@ -204,10 +201,6 @@ static void initialize_nvs(void) {
 }
 
 
-
-
-
-
 static EventGroupHandle_t s_wifi_event_group;
 
 
@@ -215,16 +208,14 @@ static EventGroupHandle_t s_wifi_event_group;
 #define WIFI_FAIL_BIT      BIT1
 
 
-
 static int s_retry_num = 0;
 
-static void event_handler(void* arg, esp_event_base_t event_base,
-                          int32_t event_id, void* event_data)
-{
+static void event_handler(void *arg, esp_event_base_t event_base,
+                          int32_t event_id, void *event_data) {
     if (event_base == WIFI_EVENT && event_id == WIFI_EVENT_STA_START) {
         esp_wifi_connect();
     } else if (event_base == WIFI_EVENT && event_id == WIFI_EVENT_STA_DISCONNECTED) {
-        wifi_connect_flag=0;
+        wifi_connect_flag = 0;
         if (s_retry_num < 10) {
             esp_wifi_connect();
             s_retry_num++;
@@ -232,10 +223,10 @@ static void event_handler(void* arg, esp_event_base_t event_base,
         } else {
             xEventGroupSetBits(s_wifi_event_group, WIFI_FAIL_BIT);
         }
-        ESP_LOGI(TAG,"connect to the AP fail");
+        ESP_LOGI(TAG, "connect to the AP fail");
     } else if (event_base == IP_EVENT && event_id == IP_EVENT_STA_GOT_IP) {
-        wifi_connect_flag=1;
-        ip_event_got_ip_t* event = (ip_event_got_ip_t*) event_data;
+        wifi_connect_flag = 1;
+        ip_event_got_ip_t *event = (ip_event_got_ip_t *) event_data;
         ESP_LOGI(TAG, "got ip:" IPSTR, IP2STR(&event->ip_info.ip));
         s_retry_num = 0;
         xEventGroupSetBits(s_wifi_event_group, WIFI_CONNECTED_BIT);
@@ -243,10 +234,7 @@ static void event_handler(void* arg, esp_event_base_t event_base,
 }
 
 
-
-
-void wifi_init_sta(void)
-{
+void wifi_init_sta(void) {
     s_wifi_event_group = xEventGroupCreate();
 
     ESP_ERROR_CHECK(esp_netif_init());
@@ -276,17 +264,17 @@ void wifi_init_sta(void)
                     .threshold.authmode = WIFI_AUTH_WPA2_PSK,
             },
     };
-    for(int k=0;k<32;k++){
-        wifi_config.sta.ssid[k]=wifi_name[k];
+    for (int k = 0; k < 32; k++) {
+        wifi_config.sta.ssid[k] = wifi_name[k];
     }
-    for(int k=0;k<64;k++){
-        wifi_config.sta.password[k]=wifi_password[k];
+    for (int k = 0; k < 64; k++) {
+        wifi_config.sta.password[k] = wifi_password[k];
     }
 
 
-    ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_STA) );
-    ESP_ERROR_CHECK(esp_wifi_set_config(WIFI_IF_STA, &wifi_config) );
-    ESP_ERROR_CHECK(esp_wifi_start() );
+    ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_STA));
+    ESP_ERROR_CHECK(esp_wifi_set_config(WIFI_IF_STA, &wifi_config));
+    ESP_ERROR_CHECK(esp_wifi_start());
 
     ESP_LOGI(TAG, "wifi_init_sta finished.");
 
@@ -302,8 +290,10 @@ void wifi_init_sta(void)
      * happened. */
     if (bits & WIFI_CONNECTED_BIT) {
         ESP_LOGI(TAG, "connected to ap SSID:%s password:%s",
-                 wifi_name,wifi_password);
-        wifi_connect_flag=1;
+                 wifi_name, wifi_password);
+        wifi_connect_flag = 1;
+        disp_msg = 5;
+        xQueueSend(disp_evt_queue, &disp_msg, NULL);
 
 
     } else if (bits & WIFI_FAIL_BIT) {
@@ -320,33 +310,29 @@ void wifi_init_sta(void)
 }
 
 
-
-
-
-
 uint32_t ble_num;
+
 static void ble_task(void *pvParameters) {
-    ble_evt_queue= xQueueCreate(10, sizeof(uint32_t));
+    ble_evt_queue = xQueueCreate(10, sizeof(uint32_t));
     send_uart_callback *ble_uart_callback;
-    ble_uart_callback=(send_uart_callback *) malloc(sizeof(send_uart_callback));
-    ble_uart_callback->func_name=ble_uart;
+    ble_uart_callback = (send_uart_callback *) malloc(sizeof(send_uart_callback));
+    ble_uart_callback->func_name = ble_uart;
     register_uart(ble_uart_callback);
 
-    while (1){
+    while (1) {
         xQueueReceive(ble_evt_queue, &ble_num, portMAX_DELAY);
-        switch(ble_num){
+        switch (ble_num) {
             case 1:
                 init_ble();
                 break;
             case 2:
-                disp_msg=4;
+                disp_msg = 4;
                 xQueueSend(disp_evt_queue, &disp_msg, NULL);
                 wifi_init_sta();
                 break;
             default:
                 break;
         }
-
 
 
     }
@@ -371,4 +357,7 @@ void app_main(void) {
 
 
 
+
+//    disp_msg=6;
+//    xQueueSend(disp_evt_queue, &disp_msg, NULL);
 }
