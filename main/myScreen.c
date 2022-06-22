@@ -296,7 +296,7 @@ void dispImg(int index){
 
     for(int k=0;k<48;k++){
         for(int j=0;j<48;j++){
-            scr[k*240+j]=pixels[k][j];
+            scr[k*240+j+190]=pixels[k][j];
         }
     }
     dispLine(0);
