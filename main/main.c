@@ -27,6 +27,17 @@
 #include "font.h"
 #include "myScreen.h"
 #include "esp_nimble_hci.h"
+#include <string.h>
+#include <esp_rrm.h>
+#include <esp_wnm.h>
+#include "freertos/FreeRTOS.h"
+#include "freertos/task.h"
+#include "freertos/event_groups.h"
+#include "esp_system.h"
+#include "esp_wifi.h"
+#include "esp_event.h"
+#include "esp_log.h"
+#include "nvs_flash.h"
 
 char *ble_name = "lghGood";
 static const char *TAG = "HTTP_CLIENT";
@@ -36,7 +47,11 @@ static TaskHandle_t detect_task_h;
 static TaskHandle_t ble_task_h;
 xQueueHandle  ble_evt_queue = NULL;
 
+uint32_t num;
+uint32_t num2;
 
+uint8_t wifi_name[32];
+uint8_t wifi_password[64];
 
 
 #define LCD_HOST    SPI2_HOST
@@ -120,6 +135,11 @@ void ble_uart( const void *src, size_t size){
                  receiveN3->valuestring,
                  receiveN4->valuestring,
                  receiveN5->valuestring);
+        num2=2;
+
+        memcpy(wifi_name,receiveN1->valuestring, strlen(receiveN1->valuestring)+1);
+        memcpy(wifi_password,receiveN2->valuestring, strlen(receiveN2->valuestring)+1);
+        xQueueSend(ble_evt_queue, &num2, NULL);
     }else{
         ESP_LOGE("re","no work parse");
     }
@@ -127,34 +147,9 @@ void ble_uart( const void *src, size_t size){
 
 }
 
-uint32_t ble_num;
-static void ble_task(void *pvParameters) {
-    ble_evt_queue= xQueueCreate(10, sizeof(uint32_t));
-    send_uart_callback *ble_uart_callback;
-    ble_uart_callback=(send_uart_callback *) malloc(sizeof(send_uart_callback));
-    ble_uart_callback->func_name=ble_uart;
-    register_uart(ble_uart_callback);
-
-    while (1){
-        xQueueReceive(ble_evt_queue, &ble_num, portMAX_DELAY);
-        switch(ble_num){
-            case 1:
-                init_ble();
-                break;
-            case 2:
-                esp_restart();
-                break;
-            default:
-                break;
-        }
 
 
 
-    }
-}
-
-uint32_t num;
-uint32_t num2;
 static void detect1_task(void *pvParameters) {
     while (true){
         if(sdFailStatus){
@@ -188,6 +183,172 @@ static void initialize_nvs(void) {
     }
     ESP_ERROR_CHECK(err);
 }
+
+
+
+
+
+
+static EventGroupHandle_t s_wifi_event_group;
+
+
+#define WIFI_CONNECTED_BIT BIT0
+#define WIFI_FAIL_BIT      BIT1
+
+
+
+static int s_retry_num = 0;
+
+static void event_handler(void* arg, esp_event_base_t event_base,
+                          int32_t event_id, void* event_data)
+{
+    if (event_base == WIFI_EVENT && event_id == WIFI_EVENT_STA_START) {
+        esp_wifi_connect();
+    } else if (event_base == WIFI_EVENT && event_id == WIFI_EVENT_STA_DISCONNECTED) {
+        if (s_retry_num < 10) {
+            esp_wifi_connect();
+            s_retry_num++;
+            ESP_LOGI(TAG, "retry to connect to the AP");
+        } else {
+            xEventGroupSetBits(s_wifi_event_group, WIFI_FAIL_BIT);
+        }
+        ESP_LOGI(TAG,"connect to the AP fail");
+    } else if (event_base == IP_EVENT && event_id == IP_EVENT_STA_GOT_IP) {
+        ip_event_got_ip_t* event = (ip_event_got_ip_t*) event_data;
+        ESP_LOGI(TAG, "got ip:" IPSTR, IP2STR(&event->ip_info.ip));
+        s_retry_num = 0;
+        xEventGroupSetBits(s_wifi_event_group, WIFI_CONNECTED_BIT);
+    }
+}
+
+
+
+
+void wifi_init_sta(void)
+{
+    s_wifi_event_group = xEventGroupCreate();
+
+    ESP_ERROR_CHECK(esp_netif_init());
+
+    ESP_ERROR_CHECK(esp_event_loop_create_default());
+    esp_netif_create_default_wifi_sta();
+
+    wifi_init_config_t cfg = WIFI_INIT_CONFIG_DEFAULT();
+    ESP_ERROR_CHECK(esp_wifi_init(&cfg));
+
+    esp_event_handler_instance_t instance_any_id;
+    esp_event_handler_instance_t instance_got_ip;
+    ESP_ERROR_CHECK(esp_event_handler_instance_register(WIFI_EVENT,
+                                                        ESP_EVENT_ANY_ID,
+                                                        &event_handler,
+                                                        NULL,
+                                                        &instance_any_id));
+    ESP_ERROR_CHECK(esp_event_handler_instance_register(IP_EVENT,
+                                                        IP_EVENT_STA_GOT_IP,
+                                                        &event_handler,
+                                                        NULL,
+                                                        &instance_got_ip));
+
+
+    wifi_config_t wifi_config = {
+            .sta = {
+//                    .ssid = "vaca",
+//                    .password = "22345678",
+                    /* Setting a password implies station will connect to all security modes including WEP/WPA.
+                     * However these modes are deprecated and not advisable to be used. Incase your Access point
+                     * doesn't support WPA2, these mode can be enabled by commenting below line */
+                    .threshold.authmode = WIFI_AUTH_WPA2_PSK,
+            },
+    };
+//    strlcpy((char *) wifi_config.sta.ssid, (char *)wifi_name, strlen((char *)wifi_name)+1);
+//    strlcpy((char *) wifi_config.sta.password, (char *)wifi_password, strlen((char *)wifi_password)+1);
+//    wifi_config.sta.password=wifi_password;
+    for(int k=0;k<32;k++){
+        wifi_config.sta.ssid[k]=wifi_name[k];
+    }
+    for(int k=0;k<64;k++){
+        wifi_config.sta.password[k]=wifi_password[k];
+    }
+
+
+    ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_STA) );
+    ESP_ERROR_CHECK(esp_wifi_set_config(WIFI_IF_STA, &wifi_config) );
+    ESP_ERROR_CHECK(esp_wifi_start() );
+
+    ESP_LOGI(TAG, "wifi_init_sta finished.");
+
+    /* Waiting until either the connection is established (WIFI_CONNECTED_BIT) or connection failed for the maximum
+     * number of re-tries (WIFI_FAIL_BIT). The bits are set by event_handler() (see above) */
+    EventBits_t bits = xEventGroupWaitBits(s_wifi_event_group,
+                                           WIFI_CONNECTED_BIT | WIFI_FAIL_BIT,
+                                           pdFALSE,
+                                           pdFALSE,
+                                           portMAX_DELAY);
+
+    /* xEventGroupWaitBits() returns the bits before the call returned, hence we can test which event actually
+     * happened. */
+    if (bits & WIFI_CONNECTED_BIT) {
+        ESP_LOGI(TAG, "connected to ap SSID:%s password:%s",
+                 wifi_name,wifi_password);
+    } else if (bits & WIFI_FAIL_BIT) {
+        ESP_LOGI(TAG, "Failed to connect to SSID:%s, password:%s",
+                 wifi_name, wifi_password);
+    } else {
+        ESP_LOGE(TAG, "UNEXPECTED EVENT");
+    }
+
+    /* The event will not be processed after unregister */
+    ESP_ERROR_CHECK(esp_event_handler_instance_unregister(IP_EVENT, IP_EVENT_STA_GOT_IP, instance_got_ip));
+    ESP_ERROR_CHECK(esp_event_handler_instance_unregister(WIFI_EVENT, ESP_EVENT_ANY_ID, instance_any_id));
+    vEventGroupDelete(s_wifi_event_group);
+}
+
+const int MIN_RSSI = -100;
+
+
+const int MAX_RSSI = -55;
+
+int calculateSignalLevel(int rssi, int numLevels) {
+    if(rssi <= MIN_RSSI) {
+        return 0;
+    } else if (rssi >= MAX_RSSI) {
+        return numLevels - 1;
+    } else {
+        float inputRange = (MAX_RSSI -MIN_RSSI);
+        float outputRange = (numLevels - 1);
+        return (int)((float)(rssi - MIN_RSSI) * outputRange / inputRange);
+    }
+}
+
+
+
+
+uint32_t ble_num;
+static void ble_task(void *pvParameters) {
+    ble_evt_queue= xQueueCreate(10, sizeof(uint32_t));
+    send_uart_callback *ble_uart_callback;
+    ble_uart_callback=(send_uart_callback *) malloc(sizeof(send_uart_callback));
+    ble_uart_callback->func_name=ble_uart;
+    register_uart(ble_uart_callback);
+
+    while (1){
+        xQueueReceive(ble_evt_queue, &ble_num, portMAX_DELAY);
+        switch(ble_num){
+            case 1:
+                init_ble();
+                break;
+            case 2:
+                wifi_init_sta();
+                break;
+            default:
+                break;
+        }
+
+
+
+    }
+}
+
 void app_main(void) {
     initialize_nvs();
 
