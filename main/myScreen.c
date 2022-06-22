@@ -294,10 +294,10 @@ void dispImg(int index){
         default:break;
     }
 
-
+    clearScreen(0xffff);
     for(int k=0;k<48;k++){
         for(int j=0;j<48;j++){
-            scr[k*240+j+190]=pixels[k][j];
+            scr[k*240+j+180]=pixels[k][j];
         }
     }
     dispLine(0);
@@ -366,8 +366,8 @@ static void disp_task(void *pvParameters) {
             default:
                 break;
         }
-        if(index>=11&&index<=15){
-            dispImg(index-10);
+        if(io_num>=11&&io_num<=15){
+            dispImg(io_num-10);
         }
     }
 }

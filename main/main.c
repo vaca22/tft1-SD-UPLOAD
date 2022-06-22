@@ -70,7 +70,7 @@ uint8_t wifi_password[64];
 spi_device_handle_t *mySpi;
 
 
-
+int wifi_connect_flag=0;
 
 #define MOUNT_POINT "/sdcard"
 
@@ -148,7 +148,22 @@ void ble_uart( const void *src, size_t size){
 }
 
 
+const int MIN_RSSI = -80;
 
+
+const int MAX_RSSI = -55;
+
+int calculateSignalLevel(int rssi, int numLevels) {
+    if(rssi <= MIN_RSSI) {
+        return 0;
+    } else if (rssi >= MAX_RSSI) {
+        return numLevels - 1;
+    } else {
+        float inputRange = (MAX_RSSI -MIN_RSSI);
+        float outputRange = (numLevels - 1);
+        return (int)((float)(rssi - MIN_RSSI) * outputRange / inputRange);
+    }
+}
 
 static void detect1_task(void *pvParameters) {
     while (true){
@@ -165,6 +180,14 @@ static void detect1_task(void *pvParameters) {
             xQueueSend(disp_evt_queue, &disp_msg, NULL);
         }
         vTaskDelay(500);
+        if(wifi_connect_flag){
+            wifi_ap_record_t ap_info;
+            esp_wifi_sta_get_ap_info(&ap_info);
+            int level= calculateSignalLevel(ap_info.rssi,5);
+            disp_msg=level+11;
+            xQueueSend(disp_evt_queue, &disp_msg, NULL);
+        }
+
     }
 
 }
@@ -201,6 +224,7 @@ static void event_handler(void* arg, esp_event_base_t event_base,
     if (event_base == WIFI_EVENT && event_id == WIFI_EVENT_STA_START) {
         esp_wifi_connect();
     } else if (event_base == WIFI_EVENT && event_id == WIFI_EVENT_STA_DISCONNECTED) {
+        wifi_connect_flag=0;
         if (s_retry_num < 10) {
             esp_wifi_connect();
             s_retry_num++;
@@ -210,6 +234,7 @@ static void event_handler(void* arg, esp_event_base_t event_base,
         }
         ESP_LOGI(TAG,"connect to the AP fail");
     } else if (event_base == IP_EVENT && event_id == IP_EVENT_STA_GOT_IP) {
+        wifi_connect_flag=1;
         ip_event_got_ip_t* event = (ip_event_got_ip_t*) event_data;
         ESP_LOGI(TAG, "got ip:" IPSTR, IP2STR(&event->ip_info.ip));
         s_retry_num = 0;
@@ -278,6 +303,9 @@ void wifi_init_sta(void)
     if (bits & WIFI_CONNECTED_BIT) {
         ESP_LOGI(TAG, "connected to ap SSID:%s password:%s",
                  wifi_name,wifi_password);
+        wifi_connect_flag=1;
+
+
     } else if (bits & WIFI_FAIL_BIT) {
         ESP_LOGI(TAG, "Failed to connect to SSID:%s, password:%s",
                  wifi_name, wifi_password);
@@ -286,27 +314,12 @@ void wifi_init_sta(void)
     }
 
     /* The event will not be processed after unregister */
-    ESP_ERROR_CHECK(esp_event_handler_instance_unregister(IP_EVENT, IP_EVENT_STA_GOT_IP, instance_got_ip));
-    ESP_ERROR_CHECK(esp_event_handler_instance_unregister(WIFI_EVENT, ESP_EVENT_ANY_ID, instance_any_id));
-    vEventGroupDelete(s_wifi_event_group);
+//    ESP_ERROR_CHECK(esp_event_handler_instance_unregister(IP_EVENT, IP_EVENT_STA_GOT_IP, instance_got_ip));
+//    ESP_ERROR_CHECK(esp_event_handler_instance_unregister(WIFI_EVENT, ESP_EVENT_ANY_ID, instance_any_id));
+//    vEventGroupDelete(s_wifi_event_group);
 }
 
-const int MIN_RSSI = -100;
 
-
-const int MAX_RSSI = -55;
-
-int calculateSignalLevel(int rssi, int numLevels) {
-    if(rssi <= MIN_RSSI) {
-        return 0;
-    } else if (rssi >= MAX_RSSI) {
-        return numLevels - 1;
-    } else {
-        float inputRange = (MAX_RSSI -MIN_RSSI);
-        float outputRange = (numLevels - 1);
-        return (int)((float)(rssi - MIN_RSSI) * outputRange / inputRange);
-    }
-}
 
 
 
@@ -353,7 +366,7 @@ void app_main(void) {
     xTaskCreatePinnedToCore(detect1_task, "detect", 4096, NULL, configMAX_PRIORITIES, &detect_task_h, 1);
     xTaskCreatePinnedToCore(ble_task, "ble", 4096, NULL, configMAX_PRIORITIES, &ble_task_h, 1);
 
-
-
+//    disp_msg=11;
+//    xQueueSend(disp_evt_queue, &disp_msg, NULL);
 
 }
