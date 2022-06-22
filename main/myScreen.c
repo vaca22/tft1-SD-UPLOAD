@@ -327,7 +327,7 @@ void dispImg(int index){
         default:break;
     }
 
-//    clearScreen(0xffff);
+    clearScreen(0xffff);
     for(int k=0;k<48;k++){
         for(int j=0;j<48;j++){
             scr[k*240+j+180]=pixels[k][j];
@@ -392,7 +392,7 @@ static void disp_task(void *pvParameters) {
                 dispLine(1);
                 clearScreen(0xffff);
                 drawASCiiString(file_name, 10, 10, 0x0, 0xffff);
-                dispLine(0);
+                dispLine(2);
 
                 break;
             case 3:
