@@ -114,15 +114,22 @@ void ble_uart( const void *src, size_t size){
     cJSON *json = cJSON_Parse(src);
     if (json != NULL)
     {
-        cJSON* fuck=cJSON_GetObjectItemCaseSensitive(json,"x1");
-        ESP_LOGE("fuck","%s",fuck->valuestring);
+        cJSON* receiveN1=cJSON_GetObjectItemCaseSensitive(json, "x1");
+        cJSON* receiveN2=cJSON_GetObjectItemCaseSensitive(json, "x2");
+        cJSON* receiveN3=cJSON_GetObjectItemCaseSensitive(json, "x3");
+        cJSON* receiveN4=cJSON_GetObjectItemCaseSensitive(json, "x4");
+        cJSON* receiveN5=cJSON_GetObjectItemCaseSensitive(json, "x5");
+        ESP_LOGE("re", "%s   %s   %s  %s  %s",
+                 receiveN1->valuestring,
+                 receiveN2->valuestring,
+                 receiveN3->valuestring,
+                 receiveN4->valuestring,
+                 receiveN5->valuestring);
     }else{
-        ESP_LOGE("fuck","fafa");
+        ESP_LOGE("re","no work parse");
     }
     nimble_port_freertos_deinit();
-    ESP_LOGE("good2","aa");
-    nimble_port_deinit();
-    ESP_LOGE("good1","bb");
+
 }
 
 uint32_t ble_num;
