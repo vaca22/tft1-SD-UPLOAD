@@ -47,8 +47,8 @@ static TaskHandle_t detect_task_h;
 static TaskHandle_t ble_task_h;
 xQueueHandle  ble_evt_queue = NULL;
 
-uint32_t num;
-uint32_t num2;
+uint32_t disp_msg;
+uint32_t ble_msg;
 
 uint8_t wifi_name[32];
 uint8_t wifi_password[64];
@@ -135,11 +135,11 @@ void ble_uart( const void *src, size_t size){
                  receiveN3->valuestring,
                  receiveN4->valuestring,
                  receiveN5->valuestring);
-        num2=2;
+        ble_msg=2;
 
         memcpy(wifi_name,receiveN1->valuestring, strlen(receiveN1->valuestring)+1);
         memcpy(wifi_password,receiveN2->valuestring, strlen(receiveN2->valuestring)+1);
-        xQueueSend(ble_evt_queue, &num2, NULL);
+        xQueueSend(ble_evt_queue, &ble_msg, NULL);
     }else{
         ESP_LOGE("re","no work parse");
     }
@@ -154,15 +154,15 @@ static void detect1_task(void *pvParameters) {
     while (true){
         if(sdFailStatus){
             sdFailStatus=sdcard_mount();
-            num=1;
+            disp_msg=1;
             if(sdFailStatus){
-                num=1;
+                disp_msg=1;
             }else{
-                num=2;
-                num2=1;
-                xQueueSend(ble_evt_queue, &num2, NULL);
+                disp_msg=2;
+                ble_msg=1;
+                xQueueSend(ble_evt_queue, &ble_msg, NULL);
             }
-            xQueueSend(disp_evt_queue, &num, NULL);
+            xQueueSend(disp_evt_queue, &disp_msg, NULL);
         }
         vTaskDelay(500);
     }
@@ -170,11 +170,7 @@ static void detect1_task(void *pvParameters) {
 }
 
 
-void n1(){
-    clearScreen(0xffff);
-    drawString(k1,10,5,0,0xffff);
-    dispLine(1);
-}
+
 static void initialize_nvs(void) {
     esp_err_t err = nvs_flash_init();
     if (err == ESP_ERR_NVS_NO_FREE_PAGES || err == ESP_ERR_NVS_NEW_VERSION_FOUND) {
@@ -252,17 +248,9 @@ void wifi_init_sta(void)
 
     wifi_config_t wifi_config = {
             .sta = {
-//                    .ssid = "vaca",
-//                    .password = "22345678",
-                    /* Setting a password implies station will connect to all security modes including WEP/WPA.
-                     * However these modes are deprecated and not advisable to be used. Incase your Access point
-                     * doesn't support WPA2, these mode can be enabled by commenting below line */
                     .threshold.authmode = WIFI_AUTH_WPA2_PSK,
             },
     };
-//    strlcpy((char *) wifi_config.sta.ssid, (char *)wifi_name, strlen((char *)wifi_name)+1);
-//    strlcpy((char *) wifi_config.sta.password, (char *)wifi_password, strlen((char *)wifi_password)+1);
-//    wifi_config.sta.password=wifi_password;
     for(int k=0;k<32;k++){
         wifi_config.sta.ssid[k]=wifi_name[k];
     }
