@@ -30,6 +30,7 @@
 #include <string.h>
 #include <esp_rrm.h>
 #include <esp_wnm.h>
+#include <sys/dirent.h>
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 #include "freertos/event_groups.h"
@@ -113,6 +114,11 @@ int sdcard_mount(void) {
 
 
     sdmmc_card_print_info(stdout, card);
+
+
+
+
+
     return 0;
 
 
@@ -162,7 +168,7 @@ int calculateSignalLevel(int rssi, int numLevels) {
         return (int) ((float) (rssi - MIN_RSSI) * outputRange / inputRange);
     }
 }
-
+#define FILE_PATH_MAX 56
 static void detect1_task(void *pvParameters) {
     while (true) {
         if (sdFailStatus) {
@@ -174,6 +180,32 @@ static void detect1_task(void *pvParameters) {
                 disp_msg = 2;
                 ble_msg = 1;
                 xQueueSend(ble_evt_queue, &ble_msg, NULL);
+                char entrypath[FILE_PATH_MAX];
+                struct dirent *entry;
+                const char *entrytype;
+                struct stat entry_stat;
+                char *dirpath="/sdcard/";
+                DIR *dir = opendir(dirpath);
+                const size_t dirpath_len = strlen(dirpath);
+                strlcpy(entrypath, dirpath, sizeof(entrypath));
+                while ((entry = readdir(dir)) != NULL) {
+                    entrytype = (entry->d_type == DT_DIR ? "directory" : "file");
+
+                    strlcpy(entrypath + dirpath_len, entry->d_name, strlen(entry->d_name)+1);
+                    if (stat(entrypath, &entry_stat) == -1) {
+                        ESP_LOGE(TAG, "Failed to stat %s : %s", entrytype, entry->d_name);
+                        continue;
+                    }
+                    if(entry->d_type==DT_DIR){
+                        continue;
+                    }
+                    if(entry_stat.st_size<1000000){
+                        continue;
+                    }
+                    ESP_LOGE("fuck","%s   %s   %ld",entrytype,entry->d_name,entry_stat.st_size);
+                }
+
+
             }
             xQueueSend(disp_evt_queue, &disp_msg, NULL);
         }
