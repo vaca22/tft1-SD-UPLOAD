@@ -23,6 +23,7 @@
 #include <esp_rrm.h>
 #include <esp_wnm.h>
 #include <sys/dirent.h>
+#include <esp_http_client.h>
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 #include "freertos/event_groups.h"
@@ -375,6 +376,101 @@ static void ble_task(void *pvParameters) {
 
 
 
+
+#define MAX_HTTP_OUTPUT_BUFFER 2048
+
+FILE *fd = NULL;
+#define Segment 16384
+char fuck[Segment]={0};
+static char card_buf[65536];
+static void http_native_request(void)
+{
+    char output_buffer[MAX_HTTP_OUTPUT_BUFFER] = {0};   // Buffer to store response of http request
+    int content_length = 0;
+    esp_http_client_config_t config = {
+            .url = "http://httpbin.org/get",
+    };
+    esp_http_client_handle_t client = esp_http_client_init(&config);
+
+
+
+    esp_http_client_set_url(client, "http://192.168.6.105:9000/echoPost");
+    esp_http_client_set_method(client, HTTP_METHOD_POST);
+    esp_http_client_set_header(client, "Content-Type", "application/json");
+    esp_http_client_set_header(client, "filename", "SDTestHY.txt");
+
+    int file_len=267006419;
+    int have_send=0;
+
+    esp_http_client_set_header(client, "len", "267006419");
+    esp_err_t  err = esp_http_client_open(client, file_len);
+
+
+    if (err != ESP_OK) {
+        ESP_LOGE(TAG, "Failed to open HTTP connection: %s", esp_err_to_name(err));
+    } else {
+
+        while(1){
+            if(file_len-have_send<Segment){
+                fread(fuck,file_len-have_send,1,fd);
+                int wlen = esp_http_client_write(client, fuck, file_len-have_send);
+                if (wlen < 0) {
+                    ESP_LOGE(TAG, "Write failed");
+                }
+                break;
+            }else{
+                fread(fuck,Segment,1,fd);
+                int wlen = esp_http_client_write(client, fuck, Segment);
+                if (wlen < 0) {
+                    ESP_LOGE(TAG, "Write failed");
+                }
+                have_send+=Segment;
+                if(have_send==file_len){
+                    break;
+                }
+            };
+        }
+
+        fclose(fd);
+
+        content_length = esp_http_client_fetch_headers(client);
+        if (content_length < 0) {
+            ESP_LOGE(TAG, "HTTP client fetch headers failed");
+        } else {
+            int data_read = esp_http_client_read_response(client, output_buffer, MAX_HTTP_OUTPUT_BUFFER);
+            if (data_read >= 0) {
+                ESP_LOGI(TAG, "HTTP POST Status = %d, content_length = %d",
+                         esp_http_client_get_status_code(client),
+                         esp_http_client_get_content_length(client));
+                ESP_LOG_BUFFER_HEX(TAG, output_buffer, strlen(output_buffer));
+            } else {
+                ESP_LOGE(TAG, "Failed to read response");
+            }
+        }
+    }
+    esp_http_client_cleanup(client);
+}
+
+
+
+
+
+
+
+
+
+static void http_test_task(void *pvParameters)
+{
+    http_native_request();
+    vTaskDelete(NULL);
+}
+
+
+
+
+
+
+
 #define GPIO_INPUT_IO_0     0
 #define GPIO_INPUT_PIN_SEL  ((1ULL<<GPIO_INPUT_IO_0) )
 #define ESP_INTR_FLAG_DEFAULT 0
@@ -385,6 +481,15 @@ static void IRAM_ATTR gpio_isr_handler(void* arg)
     uint32_t gpio_num = (uint32_t) arg;
     xQueueSendFromISR(gpio_evt_queue, &gpio_num, NULL);
 }
+
+
+
+
+
+
+
+
+
 static void button_task_example(void* arg)
 {
     uint32_t io_num;
@@ -392,6 +497,7 @@ static void button_task_example(void* arg)
         if(xQueueReceive(gpio_evt_queue, &io_num, portMAX_DELAY)) {
             if(gpio_get_level(io_num)==0){
                 ESP_LOGE("gagax","nn");
+                xTaskCreate(&http_test_task, "http_test_task", 8192, NULL, 5, NULL);
 
             }else{
                 ESP_LOGE("gagax","nn21");
