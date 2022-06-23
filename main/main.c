@@ -67,7 +67,7 @@ spi_device_handle_t *mySpi;
 
 int wifi_connect_flag = 0;
 
-#define MOUNT_POINT "/sdcard"
+char MOUNT_POINT[]="/sdcard";
 
 int sdcard_mount(void) {
     esp_err_t ret;
@@ -77,7 +77,7 @@ int sdcard_mount(void) {
             .allocation_unit_size = 16 * 1024
     };
     sdmmc_card_t *card;
-    const char mount_point[] = MOUNT_POINT;
+    const char mount_point[] = "/sdcard";
     ESP_LOGI(TAG, "Initializing SD card");
 
 
@@ -141,8 +141,7 @@ void ble_uart(const void *src, size_t size) {
     } else {
         ESP_LOGE("re", "no work parse");
     }
-//    esp_nimble_hci_deinit();
-//    nimble_port_freertos_deinit();
+
 
 }
 
@@ -385,6 +384,8 @@ char fuck[Segment]={0};
 static char card_buf[65536];
 static void http_native_request(void)
 {
+    fd = fopen(MOUNT_POINT"/SDTestHY.txt", "rb");
+    setvbuf(fd, card_buf, _IOFBF, 65536);
     char output_buffer[MAX_HTTP_OUTPUT_BUFFER] = {0};   // Buffer to store response of http request
     int content_length = 0;
     esp_http_client_config_t config = {
