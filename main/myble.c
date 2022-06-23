@@ -117,7 +117,7 @@ gatt_svr_chr_access_sec_test(uint16_t conn_handle, uint16_t attr_handle,
                                 writeBuf, &writeBufLen);
 
         if(uart_send!=NULL){
-            ble_gap_terminate(conn_handle,22);
+            //ble_gap_terminate(conn_handle,22);
             uart_send->func_name(writeBuf,writeBufLen);
 
         }
