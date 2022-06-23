@@ -262,6 +262,9 @@ void drawString(uint8_t *ss, int x1, int y1, uint16_t frontColor, uint16_t backC
 void drawASCiiString(char *ss, int x1, int y1, uint16_t frontColor, uint16_t backColor) {
     int len = strlen(ss);
     for (int k = 0; k < len; k++) {
+        if(ss[k]>127){
+            continue;
+        }
         drawCharAscii(x1 + k * 9, y1, &myAsciiFont[ss[k] * 32], frontColor, backColor);
     }
 
