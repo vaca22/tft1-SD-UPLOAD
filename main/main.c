@@ -194,7 +194,7 @@ static void detect1_task(void *pvParameters) {
                         continue;
                     }
                     memcpy(file_name,entry->d_name, strlen(entry->d_name)+1);
-                    ESP_LOGE("fuck","%s   %s   %ld",entrytype,entry->d_name,entry_stat.st_size);
+                    ESP_LOGE("foile","%s   %s   %ld",entrytype,entry->d_name,entry_stat.st_size);
                 }
 
                 disp_msg = 2;
