@@ -379,7 +379,8 @@ static void ble_task(void *pvParameters) {
 
 
 #define MAX_HTTP_OUTPUT_BUFFER 2048
-
+long file_len;
+long have_send;
 FILE *fd = NULL;
 #define Segment 16384
 char fuck[Segment]={0};
@@ -405,8 +406,8 @@ static void http_native_request(void)
     esp_http_client_set_header(client, "Content-Type", "application/json");
     esp_http_client_set_header(client, "filename", file_name);
 
-    int file_len=fileLen;
-    int have_send=0;
+    file_len=fileLen;
+    have_send=0;
     char lenString[20];
     sprintf(lenString,"%ld",fileLen);
 
@@ -425,6 +426,9 @@ static void http_native_request(void)
                 if (wlen < 0) {
                     ESP_LOGE(TAG, "Write failed");
                     break;
+                }else{
+                    disp_msg=100;
+                    xQueueSend(disp_evt_queue, &disp_msg, NULL);
                 }
                 break;
             }else{
@@ -433,6 +437,9 @@ static void http_native_request(void)
                 if (wlen < 0) {
                     ESP_LOGE(TAG, "Write failed");
                     break;
+                }else{
+                    disp_msg=100;
+                    xQueueSend(disp_evt_queue, &disp_msg, NULL);
                 }
                 have_send+=Segment;
                 if(have_send==file_len){
@@ -510,7 +517,7 @@ static void button_task_example(void* arg)
                 ESP_LOGE("gagax","nn");
                 if(isUploading==0){
                     isUploading=1;
-                    xTaskCreate(&http_test_task, "http_test_task", 8192, NULL, 5, NULL);
+                    xTaskCreatePinnedToCore(&http_test_task, "http_test_task", 8192, NULL, 5, NULL,0);
                 }
 
 

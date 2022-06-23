@@ -7,6 +7,7 @@
 #include <driver/gpio.h>
 #include <freertos/task.h>
 #include <freertos/queue.h>
+#include <esp_log.h>
 #include "myScreen.h"
 #include "font.h"
 #include "decode_image.h"
@@ -312,7 +313,7 @@ void dispAll() {
 void dispProgress(int k) {
     clearScreen(0xffff);
     drawRect(20, 10, 200, 20, 0x1F00);
-    fillRect(20, 10, k * 2, 20, 0x1F00);
+    fillRect(20, 10, k , 20, 0x1F00);
     dispLine(3);
 }
 
@@ -345,6 +346,9 @@ static TaskHandle_t disp_task_h;
 xQueueHandle disp_evt_queue = NULL;
 
 extern char    file_name[32];
+
+extern long file_len;
+extern long have_send;
 
 static void disp_task(void *pvParameters) {
     disp_evt_queue = xQueueCreate(10, sizeof(uint32_t));
@@ -426,6 +430,9 @@ static void disp_task(void *pvParameters) {
         }
         if(io_num>=11&&io_num<=15){
             dispImg(io_num-10);
+        }
+        if(io_num==100){
+            dispProgress((int)(have_send*200.0f/file_len));
         }
     }
 }
