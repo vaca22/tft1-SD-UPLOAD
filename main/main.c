@@ -379,9 +379,9 @@ static void button_task_example(void* arg)
     uint32_t io_num;
     for(;;) {
         if(xQueueReceive(gpio_evt_queue, &io_num, portMAX_DELAY)) {
-            printf("GPIO[%d] intr, val: %d\n", io_num, gpio_get_level(io_num));
             if(gpio_get_level(io_num)==0){
                 ESP_LOGE("gagax","nn");
+
             }else{
                 ESP_LOGE("gagax","nn21");
             }
@@ -392,7 +392,7 @@ void initButton(){
     gpio_config_t io_conf = {};
 
     //interrupt of rising edge
-    io_conf.intr_type =GPIO_INTR_ANYEDGE;
+    io_conf.intr_type =GPIO_INTR_NEGEDGE;
     //bit mask of the pins, use GPIO4/5 here
     io_conf.pin_bit_mask = GPIO_INPUT_PIN_SEL;
     //set as input mode
