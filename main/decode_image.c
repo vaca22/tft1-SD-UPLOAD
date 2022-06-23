@@ -81,30 +81,29 @@ esp_err_t decode_image(uint16_t ***pixels,uint8_t *jpeg)
     int r;
     esp_rom_tjpgd_dec_t decoder;
     JpegDev jd;
-    if(*pixels!=NULL){
-        for (int i = 0; i < IMAGE_H; i++) {
-            free((*pixels)[i]);
-        }
-        free(*pixels);
-    }
-    *pixels = NULL;
     esp_err_t ret = ESP_OK;
+    if(*pixels==NULL){
+        *pixels = calloc(IMAGE_H, sizeof(uint16_t *));
+        for (int i = 0; i < IMAGE_H; i++) {
+            (*pixels)[i] = malloc(IMAGE_W * sizeof(uint16_t));
+            if ((*pixels)[i] == NULL) {
+                ESP_LOGE(TAG, "Error allocating memory for line %d", i);
+                ret = ESP_ERR_NO_MEM;
+                goto err;
+            }
+        }
+    }
+
+
 
     //Alocate pixel memory. Each line is an array of IMAGE_W 16-bit pixels; the `*pixels` array itself contains pointers to these lines.
-    *pixels = calloc(IMAGE_H, sizeof(uint16_t *));
+
     if (*pixels == NULL) {
         ESP_LOGE(TAG, "Error allocating memory for lines");
         ret = ESP_ERR_NO_MEM;
         goto err;
     }
-    for (int i = 0; i < IMAGE_H; i++) {
-        (*pixels)[i] = malloc(IMAGE_W * sizeof(uint16_t));
-        if ((*pixels)[i] == NULL) {
-            ESP_LOGE(TAG, "Error allocating memory for line %d", i);
-            ret = ESP_ERR_NO_MEM;
-            goto err;
-        }
-    }
+
 
     //Allocate the work space for the jpeg decoder.
     work = calloc(WORKSZ, 1);

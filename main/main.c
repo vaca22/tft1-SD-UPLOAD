@@ -47,8 +47,8 @@ uint32_t ble_msg;
 uint8_t wifi_name[32];
 uint8_t wifi_password[64];
 char    file_name[32]={0};
-
-
+long fileLen=0;
+int isUploading=0;
 #define LCD_HOST    SPI2_HOST
 
 #define PIN_NUM_MISO -1
@@ -67,12 +67,12 @@ spi_device_handle_t *mySpi;
 
 int wifi_connect_flag = 0;
 
-char MOUNT_POINT[]="/sdcard";
+char MOUNT_POINT[100]="/sdcard/";
 
 int sdcard_mount(void) {
     esp_err_t ret;
     esp_vfs_fat_sdmmc_mount_config_t mount_config = {
-            .format_if_mount_failed = false,
+            .format_if_mount_failed = true,
             .max_files = 5,
             .allocation_unit_size = 16 * 1024
     };
@@ -83,6 +83,7 @@ int sdcard_mount(void) {
 
     ESP_LOGI(TAG, "Using SDMMC peripheral");
     sdmmc_host_t host = SDMMC_HOST_DEFAULT();
+
 
     sdmmc_slot_config_t slot_config = SDMMC_SLOT_CONFIG_DEFAULT();
 
@@ -194,6 +195,7 @@ static void detect1_task(void *pvParameters) {
                         continue;
                     }
                     memcpy(file_name,entry->d_name, strlen(entry->d_name)+1);
+                    fileLen=entry_stat.st_size;
                     ESP_LOGE("foile","%s   %s   %ld",entrytype,entry->d_name,entry_stat.st_size);
                 }
 
@@ -205,7 +207,7 @@ static void detect1_task(void *pvParameters) {
             }
             xQueueSend(disp_evt_queue, &disp_msg, NULL);
         }
-        vTaskDelay(300);
+        vTaskDelay(500);
         if (wifi_connect_flag) {
             wifi_ap_record_t ap_info;
             esp_wifi_sta_get_ap_info(&ap_info);
@@ -381,11 +383,14 @@ static void ble_task(void *pvParameters) {
 FILE *fd = NULL;
 #define Segment 16384
 char fuck[Segment]={0};
-static char card_buf[65536];
+static char card_buf[16384];
 static void http_native_request(void)
 {
-    fd = fopen(MOUNT_POINT"/SDTestHY.txt", "rb");
-    setvbuf(fd, card_buf, _IOFBF, 65536);
+    for(int k=0;k<32;k++){
+        MOUNT_POINT[k+8]=file_name[k];
+    }
+    fd = fopen(MOUNT_POINT, "rb");
+    setvbuf(fd, card_buf, _IOFBF, 16384);
     char output_buffer[MAX_HTTP_OUTPUT_BUFFER] = {0};   // Buffer to store response of http request
     int content_length = 0;
     esp_http_client_config_t config = {
@@ -398,12 +403,14 @@ static void http_native_request(void)
     esp_http_client_set_url(client, "http://192.168.6.105:9000/echoPost");
     esp_http_client_set_method(client, HTTP_METHOD_POST);
     esp_http_client_set_header(client, "Content-Type", "application/json");
-    esp_http_client_set_header(client, "filename", "SDTestHY.txt");
+    esp_http_client_set_header(client, "filename", file_name);
 
-    int file_len=267006419;
+    int file_len=fileLen;
     int have_send=0;
+    char lenString[20];
+    sprintf(lenString,"%ld",fileLen);
 
-    esp_http_client_set_header(client, "len", "267006419");
+    esp_http_client_set_header(client, "len", lenString);
     esp_err_t  err = esp_http_client_open(client, file_len);
 
 
@@ -417,6 +424,7 @@ static void http_native_request(void)
                 int wlen = esp_http_client_write(client, fuck, file_len-have_send);
                 if (wlen < 0) {
                     ESP_LOGE(TAG, "Write failed");
+                    break;
                 }
                 break;
             }else{
@@ -424,6 +432,7 @@ static void http_native_request(void)
                 int wlen = esp_http_client_write(client, fuck, Segment);
                 if (wlen < 0) {
                     ESP_LOGE(TAG, "Write failed");
+                    break;
                 }
                 have_send+=Segment;
                 if(have_send==file_len){
@@ -450,6 +459,7 @@ static void http_native_request(void)
         }
     }
     esp_http_client_cleanup(client);
+    isUploading=0;
 }
 
 
@@ -498,7 +508,11 @@ static void button_task_example(void* arg)
         if(xQueueReceive(gpio_evt_queue, &io_num, portMAX_DELAY)) {
             if(gpio_get_level(io_num)==0){
                 ESP_LOGE("gagax","nn");
-                xTaskCreate(&http_test_task, "http_test_task", 8192, NULL, 5, NULL);
+                if(isUploading==0){
+                    isUploading=1;
+                    xTaskCreate(&http_test_task, "http_test_task", 8192, NULL, 5, NULL);
+                }
+
 
             }else{
                 ESP_LOGE("gagax","nn21");
