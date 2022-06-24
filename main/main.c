@@ -401,7 +401,7 @@ static void http_native_request(void)
 
 
 
-    esp_http_client_set_url(client, "http://192.168.6.105:9000/echoPost");
+    esp_http_client_set_url(client, "http://106.12.139.216:9001/post");
     esp_http_client_set_method(client, HTTP_METHOD_POST);
     esp_http_client_set_header(client, "Content-Type", "application/json");
     esp_http_client_set_header(client, "filename", file_name);
