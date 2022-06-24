@@ -383,7 +383,7 @@ long file_len;
 long have_send;
 FILE *fd = NULL;
 #define Segment 16384
-char fuck[Segment]={0};
+char fileTemp[Segment]={0};
 static char card_buf[16384];
 static void http_native_request(void)
 {
@@ -421,8 +421,8 @@ static void http_native_request(void)
 
         while(1){
             if(file_len-have_send<Segment){
-                fread(fuck,file_len-have_send,1,fd);
-                int wlen = esp_http_client_write(client, fuck, file_len-have_send);
+                fread(fileTemp, file_len - have_send, 1, fd);
+                int wlen = esp_http_client_write(client, fileTemp, file_len - have_send);
                 if (wlen < 0) {
                     ESP_LOGE(TAG, "Write failed");
                     break;
@@ -432,8 +432,8 @@ static void http_native_request(void)
                 }
                 break;
             }else{
-                fread(fuck,Segment,1,fd);
-                int wlen = esp_http_client_write(client, fuck, Segment);
+                fread(fileTemp, Segment, 1, fd);
+                int wlen = esp_http_client_write(client, fileTemp, Segment);
                 if (wlen < 0) {
                     ESP_LOGE(TAG, "Write failed");
                     break;
