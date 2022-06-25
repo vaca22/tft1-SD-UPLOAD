@@ -68,7 +68,9 @@ spi_device_handle_t *mySpi;
 int wifi_connect_flag = 0;
 
 char MOUNT_POINT[100]="/sdcard/";
-
+sdmmc_card_t *card;
+const char mount_point[] = "/sdcard";
+sdmmc_host_t host= SDMMC_HOST_DEFAULT();;
 int sdcard_mount(void) {
     esp_err_t ret;
     esp_vfs_fat_sdmmc_mount_config_t mount_config = {
@@ -76,13 +78,13 @@ int sdcard_mount(void) {
             .max_files = 5,
             .allocation_unit_size = 16 * 1024
     };
-    sdmmc_card_t *card;
-    const char mount_point[] = "/sdcard";
+
+
     ESP_LOGI(TAG, "Initializing SD card");
 
 
     ESP_LOGI(TAG, "Using SDMMC peripheral");
-    sdmmc_host_t host = SDMMC_HOST_DEFAULT();
+
 
 
     sdmmc_slot_config_t slot_config = SDMMC_SLOT_CONFIG_DEFAULT();
@@ -467,6 +469,8 @@ static void http_native_request(void)
     }
     esp_http_client_cleanup(client);
     isUploading=0;
+    esp_vfs_fat_sdcard_unmount(mount_point, card);
+    spi_bus_free(host.slot);
 }
 
 
