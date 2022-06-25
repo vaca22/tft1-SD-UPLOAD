@@ -403,7 +403,7 @@ static void http_native_request(void)
 
 
 
-    esp_http_client_set_url(client, "http://106.12.139.216:9001/post");
+    esp_http_client_set_url(client, "http://106.13.194.65:9001/post");
     esp_http_client_set_method(client, HTTP_METHOD_POST);
     esp_http_client_set_header(client, "Content-Type", "application/json");
     esp_http_client_set_header(client, "filename", file_name);
@@ -415,9 +415,10 @@ static void http_native_request(void)
 
     esp_http_client_set_header(client, "len", lenString);
     esp_err_t  err = esp_http_client_open(client, file_len);
-
+    disp_msg=8;
 
     if (err != ESP_OK) {
+        disp_msg=7;
         ESP_LOGE(TAG, "Failed to open HTTP connection: %s", esp_err_to_name(err));
     } else {
 
@@ -426,6 +427,7 @@ static void http_native_request(void)
                 fread(fileTemp, file_len - have_send, 1, fd);
                 int wlen = esp_http_client_write(client, fileTemp, file_len - have_send);
                 if (wlen < 0) {
+                    disp_msg=7;
                     ESP_LOGE(TAG, "Write failed");
                     break;
                 }else{
@@ -437,6 +439,7 @@ static void http_native_request(void)
                 fread(fileTemp, Segment, 1, fd);
                 int wlen = esp_http_client_write(client, fileTemp, Segment);
                 if (wlen < 0) {
+                    disp_msg=7;
                     ESP_LOGE(TAG, "Write failed");
                     break;
                 }else{
@@ -454,10 +457,12 @@ static void http_native_request(void)
 
         content_length = esp_http_client_fetch_headers(client);
         if (content_length < 0) {
+            disp_msg=7;
             ESP_LOGE(TAG, "HTTP client fetch headers failed");
         } else {
             int data_read = esp_http_client_read_response(client, output_buffer, MAX_HTTP_OUTPUT_BUFFER);
             if (data_read >= 0) {
+                disp_msg=8;
                 ESP_LOGI(TAG, "HTTP POST Status = %d, content_length = %d",
                          esp_http_client_get_status_code(client),
                          esp_http_client_get_content_length(client));
@@ -466,11 +471,16 @@ static void http_native_request(void)
                 ESP_LOGE(TAG, "Failed to read response");
             }
         }
+
+
+
     }
+
+    ESP_LOGE("comlipe","com  %d",disp_msg);
+    xQueueSend(disp_evt_queue, &disp_msg, NULL);
     esp_http_client_cleanup(client);
     isUploading=0;
     esp_vfs_fat_sdcard_unmount(mount_point, card);
-    spi_bus_free(host.slot);
 }
 
 
@@ -574,9 +584,10 @@ void app_main(void) {
     xTaskCreatePinnedToCore(ble_task, "ble", 4096, NULL, configMAX_PRIORITIES, &ble_task_h, 1);
 
 
+    vTaskDelay(200);
 
 
-//    disp_msg = 5;
+//    disp_msg = 8;
 //    xQueueSend(disp_evt_queue, &disp_msg, NULL);
 //    disp_msg=6;
 //    xQueueSend(disp_evt_queue, &disp_msg, NULL);

@@ -313,7 +313,7 @@ void dispAll() {
 void dispProgress(int k) {
     clearScreen(0xffff);
     drawRect(20, 10, 200, 20, 0x1F00);
-    fillRect(20, 10, k , 20, 0x1F00);
+    fillRect(20, 10, k+1 , 20, 0x1F00);
     dispLine(3);
 }
 
@@ -423,6 +423,16 @@ static void disp_task(void *pvParameters) {
             case 6:
                 clearScreen(0xffff);
                 drawString(k44, 10, 10, 0x0, 0xffff);
+                dispLine(1);
+                break;
+            case 7:
+                clearScreen(0xffff);
+                drawString(k5, 10, 10, 0x0, 0xffff);
+                dispLine(1);
+                break;
+            case 8:
+                clearScreen(0xffff);
+                drawString(k6, 10, 10, 0x0, 0xffff);
                 dispLine(1);
                 break;
             default:
