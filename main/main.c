@@ -216,6 +216,9 @@ static void detect1_task(void *pvParameters) {
             int level = calculateSignalLevel(ap_info.rssi, 5);
             disp_msg = level + 11;
             xQueueSend(disp_evt_queue, &disp_msg, NULL);
+        }else{
+            disp_msg = 10;
+            xQueueSend(disp_evt_queue, &disp_msg, NULL);
         }
 
     }
@@ -247,7 +250,7 @@ static void event_handler(void *arg, esp_event_base_t event_base,
     if (event_base == WIFI_EVENT && event_id == WIFI_EVENT_STA_START) {
         esp_wifi_connect();
     } else if (event_base == WIFI_EVENT && event_id == WIFI_EVENT_STA_DISCONNECTED) {
-        wifi_connect_flag = 0;
+
         if (s_retry_num < 3) {
             esp_wifi_connect();
             s_retry_num++;
@@ -256,12 +259,19 @@ static void event_handler(void *arg, esp_event_base_t event_base,
             xEventGroupSetBits(s_wifi_event_group, WIFI_FAIL_BIT);
         }
         ESP_LOGI(TAG, "connect to the AP fail");
+        if(wifi_connect_flag==1){
+            s_retry_num=0;
+            esp_wifi_connect();
+        }
+        wifi_connect_flag = 0;
     } else if (event_base == IP_EVENT && event_id == IP_EVENT_STA_GOT_IP) {
         wifi_connect_flag = 1;
         ip_event_got_ip_t *event = (ip_event_got_ip_t *) event_data;
         ESP_LOGI(TAG, "got ip:" IPSTR, IP2STR(&event->ip_info.ip));
         s_retry_num = 0;
         xEventGroupSetBits(s_wifi_event_group, WIFI_CONNECTED_BIT);
+        disp_msg = 5;
+        xQueueSend(disp_evt_queue, &disp_msg, NULL);
     }
 }
 
