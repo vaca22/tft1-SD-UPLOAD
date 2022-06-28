@@ -194,7 +194,7 @@ static void detect1_task(void *pvParameters) {
                     if(entry->d_type==DT_DIR){
                         continue;
                     }
-                    if(entry_stat.st_size<1000000){
+                    if(entry_stat.st_size<MIN_FILE_SIZE){
                         continue;
                     }
                     memcpy(file_name,entry->d_name, strlen(entry->d_name)+1);
