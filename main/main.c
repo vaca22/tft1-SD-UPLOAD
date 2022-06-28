@@ -32,8 +32,9 @@
 #include "esp_event.h"
 #include "esp_log.h"
 #include "nvs_flash.h"
+#include "config.h"
 
-char *ble_name = "lghGood";
+char *ble_name = BLE_NAME;
 static const char *TAG = "HTTP_CLIENT";
 int haveSD = false;
 int sdFailStatus = true;
@@ -413,7 +414,7 @@ static void http_native_request(void)
 
 
 
-    esp_http_client_set_url(client, "http://106.13.194.65:9001/post");
+    esp_http_client_set_url(client, POST_URL);
     esp_http_client_set_method(client, HTTP_METHOD_POST);
     esp_http_client_set_header(client, "Content-Type", "application/json");
     esp_http_client_set_header(client, "filename", file_name);
@@ -538,15 +539,10 @@ static void button_task_example(void* arg)
     for(;;) {
         if(xQueueReceive(gpio_evt_queue, &io_num, portMAX_DELAY)) {
             if(gpio_get_level(io_num)==0){
-                ESP_LOGE("gagax","nn");
                 if(isUploading==0){
                     isUploading=1;
                     xTaskCreatePinnedToCore(&http_test_task, "http_test_task", 8192, NULL, 5, NULL,0);
                 }
-
-
-            }else{
-                ESP_LOGE("gagax","nn21");
             }
         }
     }
@@ -580,25 +576,10 @@ void initButton(){
 void app_main(void) {
     initialize_nvs();
     initButton();
-
     initScreen();
 
-
-
-//    for(int k=0;k<=100;k++){
-//        dispProgress(k);
-//        vTaskDelay(10);
-//    }
 
     xTaskCreatePinnedToCore(detect1_task, "detect", 4096, NULL, configMAX_PRIORITIES, &detect_task_h, 1);
     xTaskCreatePinnedToCore(ble_task, "ble", 4096, NULL, configMAX_PRIORITIES, &ble_task_h, 1);
 
-
-    vTaskDelay(200);
-
-
-//    disp_msg = 8;
-//    xQueueSend(disp_evt_queue, &disp_msg, NULL);
-//    disp_msg=6;
-//    xQueueSend(disp_evt_queue, &disp_msg, NULL);
 }
