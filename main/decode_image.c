@@ -23,8 +23,8 @@ format if you want to use a different image file.
 #include <string.h>
 
 
-#define IMAGE_W 48
-#define IMAGE_H 48
+#define IMAGE_W 150
+#define IMAGE_H 150
 
 const char *TAG = "ImageDec";
 

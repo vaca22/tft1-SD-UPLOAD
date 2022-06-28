@@ -33,7 +33,7 @@ extern const unsigned char s2_start[] asm("_binary_s2_jpg_start");
 extern const unsigned char s3_start[] asm("_binary_s3_jpg_start");
 extern const unsigned char s4_start[] asm("_binary_s4_jpg_start");
 extern const unsigned char s5_start[] asm("_binary_s5_jpg_start");
-
+extern const unsigned char qr_start[] asm("_binary_qr_jpg_start");
 
 typedef struct {
     uint8_t cmd;
@@ -342,6 +342,34 @@ void dispImg(int index){
     dispLine(0);
 }
 
+void dispImgQR(){
+    decode_image(&pixels,qr_start);
+    clearScreen(0xffff);
+    for(int k=0;k<60;k++){
+        for(int j=0;j<150;j++){
+            scr[k*240+j]=pixels[k][j];
+        }
+    }
+    dispLine(0);
+
+    clearScreen(0xffff);
+    for(int k=60;k<120;k++){
+        for(int j=0;j<150;j++){
+            scr[(k-60)*240+j]=pixels[k][j];
+        }
+    }
+    dispLine(1);
+
+    clearScreen(0xffff);
+    for(int k=120;k<150;k++){
+        for(int j=0;j<150;j++){
+            scr[(k-120)*240+j]=pixels[k][j];
+        }
+    }
+    dispLine(2);
+}
+
+
 
 
 static TaskHandle_t disp_task_h;
@@ -388,7 +416,7 @@ static void disp_task(void *pvParameters) {
     uint32_t io_num;
     while (1) {
         xQueueReceive(disp_evt_queue, &io_num, portMAX_DELAY);
-        switch (io_num) {
+      /*  switch (io_num) {
             case 1:
                 clearScreen(0xffff);
                 drawString(k1, 50, 10, 0x0, 0xffff);
@@ -442,6 +470,9 @@ static void disp_task(void *pvParameters) {
         }
         if(io_num>=10&&io_num<=15){
             dispImg(io_num-10);
+        }*/
+        if(io_num==20){
+            dispImgQR();
         }
         if(io_num==100){
             dispProgress((int)(have_send*200.0f/file_len));
